@@ -34,8 +34,8 @@ jobs:
         shell: pwsh
         env:
           EMBED_KEYS: ${{ github.event_name == 'workflow_dispatch' && inputs.live_keys }}
-          YAXI_KEY_ID: ${{ secrets.YAXI_KEY_ID }}
-          YAXI_SECRET_BASE64: ${{ secrets.YAXI_SECRET_BASE64 }}
+          YAXI_KEY_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.live_keys && secrets.YAXI_KEY_ID || '' }}
+          YAXI_SECRET_BASE64: ${{ github.event_name == 'workflow_dispatch' && inputs.live_keys && secrets.YAXI_SECRET_BASE64 || '' }}
         run: |
           $argsForBuild = @{ Test = $true }
           if ($env:EMBED_KEYS -eq 'true') {
