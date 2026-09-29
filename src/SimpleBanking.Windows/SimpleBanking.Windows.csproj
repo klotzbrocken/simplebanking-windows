@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>simplebanking</AssemblyName>
+    <Version>0.16.0</Version>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <YaxiKeysFile Condition="'$(YaxiKeysFile)' == ''">$(MSBuildThisFileDirectory)..\..\secrets\yaxi-keys.json</YaxiKeysFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Fluent\*.png" />
+    <PackageReference Include="PDFsharp-GDI" Version="6.2.4" />
+    <Content Include="Assets\Themes\*.cfg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Fonts\VT323-Regular.ttf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <Content Include="Assets\tessdata\*.traineddata" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Assets\Fonts\*.ttf" />
+    <EmbeddedResource Include="Assets\cancellation.json" LogicalName="SimpleBanking.Cancellation.json" />
+    <EmbeddedResource Include="Assets\app-mark.png" LogicalName="SimpleBanking.AppMark.png" />
+    <EmbeddedResource Include="Assets\bank-brands.json" LogicalName="SimpleBanking.BankBrands.json" />
+    <Content Include="Assets\BankLogos\*.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\MerchantLogos\*.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Assets\remote-merchant-logos.json" LogicalName="SimpleBanking.RemoteMerchantLogos.json" />
+    <EmbeddedResource Include="Assets\merchant-logos.json" LogicalName="SimpleBanking.MerchantLogos.json" />
+    <EmbeddedResource Include="Assets\recurring-services.json" LogicalName="SimpleBanking.RecurringServices.json" />
+    <EmbeddedResource Include="Assets\merchant-aliases.json" LogicalName="SimpleBanking.MerchantAliases.json" />
+    <EmbeddedResource Include="$(YaxiKeysFile)" LogicalName="SimpleBanking.YaxiKeys.json" Condition="Exists('$(YaxiKeysFile)')" />
+    <None Include="..\..\native\lib\*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

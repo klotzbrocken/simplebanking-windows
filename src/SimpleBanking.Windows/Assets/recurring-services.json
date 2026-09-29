@@ -1,0 +1,457 @@
+[
+  {
+    "Pattern": "netflix",
+    "Name": "Netflix",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "spotify",
+    "Name": "Spotify",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "disney",
+    "Name": "Disney+",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "prime video",
+    "Name": "Prime Video",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "amazon prime",
+    "Name": "Amazon Prime",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "apple tv",
+    "Name": "Apple TV+",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "youtube premium",
+    "Name": "YouTube Premium",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "dazn",
+    "Name": "DAZN",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "sky",
+    "Name": "Sky",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "waipu",
+    "Name": "Waipu.tv",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "joyn",
+    "Name": "Joyn",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "wow ",
+    "Name": "WOW",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "crunchyroll",
+    "Name": "Crunchyroll",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "audible",
+    "Name": "Audible",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "deezer",
+    "Name": "Deezer",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "tidal",
+    "Name": "Tidal",
+    "Category": "streaming"
+  },
+  {
+    "Pattern": "adobe",
+    "Name": "Adobe",
+    "Category": "software"
+  },
+  {
+    "Pattern": "microsoft 365",
+    "Name": "Microsoft 365",
+    "Category": "software"
+  },
+  {
+    "Pattern": "office 365",
+    "Name": "Office 365",
+    "Category": "software"
+  },
+  {
+    "Pattern": "dropbox",
+    "Name": "Dropbox",
+    "Category": "software"
+  },
+  {
+    "Pattern": "icloud",
+    "Name": "iCloud",
+    "Category": "software"
+  },
+  {
+    "Pattern": "google one",
+    "Name": "Google One",
+    "Category": "software"
+  },
+  {
+    "Pattern": "notion",
+    "Name": "Notion",
+    "Category": "software"
+  },
+  {
+    "Pattern": "1password",
+    "Name": "1Password",
+    "Category": "software"
+  },
+  {
+    "Pattern": "bitwarden",
+    "Name": "Bitwarden",
+    "Category": "software"
+  },
+  {
+    "Pattern": "github",
+    "Name": "GitHub",
+    "Category": "software"
+  },
+  {
+    "Pattern": "jetbrains",
+    "Name": "JetBrains",
+    "Category": "software"
+  },
+  {
+    "Pattern": "figma",
+    "Name": "Figma",
+    "Category": "software"
+  },
+  {
+    "Pattern": "canva",
+    "Name": "Canva",
+    "Category": "software"
+  },
+  {
+    "Pattern": "slack",
+    "Name": "Slack",
+    "Category": "software"
+  },
+  {
+    "Pattern": "zoom",
+    "Name": "Zoom",
+    "Category": "software"
+  },
+  {
+    "Pattern": "openai",
+    "Name": "OpenAI",
+    "Category": "software"
+  },
+  {
+    "Pattern": "chatgpt",
+    "Name": "ChatGPT",
+    "Category": "software"
+  },
+  {
+    "Pattern": "anthropic",
+    "Name": "Anthropic",
+    "Category": "software"
+  },
+  {
+    "Pattern": "midjourney",
+    "Name": "Midjourney",
+    "Category": "software"
+  },
+  {
+    "Pattern": "grammarly",
+    "Name": "Grammarly",
+    "Category": "software"
+  },
+  {
+    "Pattern": "telekom",
+    "Name": "Telekom",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "vodafone",
+    "Name": "Vodafone",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "o2",
+    "Name": "O2",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "telefonica",
+    "Name": "Telefónica",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "1&1",
+    "Name": "1&1",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "congstar",
+    "Name": "Congstar",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "aldi talk",
+    "Name": "ALDI TALK",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "lidl connect",
+    "Name": "Lidl Connect",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "freenet",
+    "Name": "Freenet",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "mobilcom",
+    "Name": "Mobilcom",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "simplytel",
+    "Name": "Simplytel",
+    "Category": "telecom"
+  },
+  {
+    "Pattern": "allianz",
+    "Name": "Allianz",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "huk",
+    "Name": "HUK",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "axa",
+    "Name": "AXA",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "ergo",
+    "Name": "ERGO",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "debeka",
+    "Name": "Debeka",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "generali",
+    "Name": "Generali",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "signal iduna",
+    "Name": "Signal Iduna",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "versicherung",
+    "Name": "Versicherung",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "barmer",
+    "Name": "Barmer",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "tk krankenkasse",
+    "Name": "TK",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "aok",
+    "Name": "AOK",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "dak",
+    "Name": "DAK",
+    "Category": "insurance"
+  },
+  {
+    "Pattern": "stadtwerke",
+    "Name": "Stadtwerke",
+    "Category": "utilities"
+  },
+  {
+    "Pattern": "eon",
+    "Name": "E.ON",
+    "Category": "utilities"
+  },
+  {
+    "Pattern": "rwe",
+    "Name": "RWE",
+    "Category": "utilities"
+  },
+  {
+    "Pattern": "vattenfall",
+    "Name": "Vattenfall",
+    "Category": "utilities"
+  },
+  {
+    "Pattern": "enpal",
+    "Name": "Enpal",
+    "Category": "utilities"
+  },
+  {
+    "Pattern": "strom",
+    "Name": "Stromanbieter",
+    "Category": "utilities"
+  },
+  {
+    "Pattern": "gas",
+    "Name": "Gasanbieter",
+    "Category": "utilities"
+  },
+  {
+    "Pattern": "fitness",
+    "Name": "Fitnessstudio",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "gym",
+    "Name": "Gym",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "mcfit",
+    "Name": "McFit",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "urban sports",
+    "Name": "Urban Sports",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "adac",
+    "Name": "ADAC",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "verein",
+    "Name": "Vereinsbeitrag",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "bahncard",
+    "Name": "BahnCard",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "depot",
+    "Name": "Depot",
+    "Category": "finance"
+  },
+  {
+    "Pattern": "trade republic",
+    "Name": "Trade Republic",
+    "Category": "finance"
+  },
+  {
+    "Pattern": "scalable",
+    "Name": "Scalable",
+    "Category": "finance"
+  },
+  {
+    "Pattern": "comdirect",
+    "Name": "Comdirect",
+    "Category": "finance"
+  },
+  {
+    "Pattern": "ing diba",
+    "Name": "ING",
+    "Category": "finance"
+  },
+  {
+    "Pattern": "dkb",
+    "Name": "DKB",
+    "Category": "finance"
+  },
+  {
+    "Pattern": "deutschlandticket",
+    "Name": "Deutschlandticket",
+    "Category": "transport"
+  },
+  {
+    "Pattern": "bahn",
+    "Name": "Deutsche Bahn",
+    "Category": "transport"
+  },
+  {
+    "Pattern": "nextbike",
+    "Name": "Nextbike",
+    "Category": "transport"
+  },
+  {
+    "Pattern": "miles",
+    "Name": "MILES",
+    "Category": "transport"
+  },
+  {
+    "Pattern": "share now",
+    "Name": "ShareNow",
+    "Category": "transport"
+  },
+  {
+    "Pattern": "tier",
+    "Name": "TIER",
+    "Category": "transport"
+  },
+  {
+    "Pattern": "bolt",
+    "Name": "Bolt",
+    "Category": "transport"
+  },
+  {
+    "Pattern": "podigee",
+    "Name": "Podigee",
+    "Category": "software"
+  },
+  {
+    "Pattern": "anchor",
+    "Name": "Anchor",
+    "Category": "software"
+  },
+  {
+    "Pattern": "patreon",
+    "Name": "Patreon",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "substack",
+    "Name": "Substack",
+    "Category": "membership"
+  },
+  {
+    "Pattern": "twitch",
+    "Name": "Twitch",
+    "Category": "streaming"
+  }
+]

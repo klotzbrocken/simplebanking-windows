@@ -1,0 +1,67 @@
+<!-- Based on WiX Standard Bootstrapper Application localization. Copyright .NET Foundation and contributors; Microsoft Reciprocal License. German modifications by Maik Klotz. -->
+<WixLocalization xmlns="http://wixtoolset.org/schemas/v4/wxl" Culture="de-de" Language="1031">
+  <String Id="Caption" Value="[WixBundleName] · Installation" />
+  <String Id="Title" Value="[WixBundleName]" />
+  <String Id="CheckingForUpdatesLabel" Value="Suche nach Updates" />
+  <String Id="UpdateButton" Value="&amp;Update auf [WixStdBAUpdateAvailable]" />
+  <String Id="InstallHeader" Value="Willkommen" />
+  <String Id="InstallMessage" Value="Installiert simplebanking für dein Windows-Benutzerkonto. Die Laufzeit ist enthalten. Bitte eine laufende Version vorher im Tray beenden." />
+  <String Id="InstallMessageOptions" Value="Installiert simplebanking für dein Windows-Benutzerkonto." />
+  <String Id="InstallVersion" Value="Version [WixBundleVersion]" />
+  <String Id="ConfirmCancelMessage" Value="Möchtest du die Installation abbrechen?" />
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Vorherige Version" />
+  <String Id="HelpHeader" Value="Installationshilfe" />
+  <String Id="HelpText" Value="/install  Installieren&#10;/repair  Reparieren&#10;/uninstall  Deinstallieren&#10;/layout [Ordner]  Installationsdateien ablegen&#10;/quiet  Ohne Benutzeroberfläche&#10;/passive  Nur Fortschritt anzeigen&#10;/norestart  Kein automatischer Neustart&#10;/log Datei.log  Protokoll speichern" />
+  <String Id="HelpCloseButton" Value="&amp;Schließen" />
+  <String Id="InstallLicenseLinkText" Value="&lt;a href=&quot;#&quot;&gt;Lizenzbedingungen&lt;/a&gt;" />
+  <String Id="InstallAcceptCheckbox" Value="Lizenzbedingungen &amp;akzeptieren" />
+  <String Id="InstallOptionsButton" Value="&amp;Optionen" />
+  <String Id="InstallInstallButton" Value="&amp;Installieren" />
+  <String Id="InstallCancelButton" Value="&amp;Abbrechen" />
+  <String Id="OptionsHeader" Value="Installationsoptionen" />
+  <String Id="OptionsLocationLabel" Value="Installationsordner:" />
+  <String Id="OptionsBrowseButton" Value="&amp;Durchsuchen" />
+  <String Id="OptionsOkButton" Value="&amp;OK" />
+  <String Id="OptionsCancelButton" Value="&amp;Abbrechen" />
+  <String Id="ProgressHeader" Value="Installation läuft" />
+  <String Id="ProgressLabel" Value="Wird verarbeitet:" />
+  <String Id="OverallProgressPackageText" Value="Wird vorbereitet …" />
+  <String Id="ProgressCancelButton" Value="&amp;Abbrechen" />
+  <String Id="ModifyHeader" Value="Installation verwalten" />
+  <String Id="ModifyRepairButton" Value="&amp;Reparieren" />
+  <String Id="ModifyUninstallButton" Value="&amp;Deinstallieren" />
+  <String Id="ModifyCancelButton" Value="&amp;Abbrechen" />
+  <String Id="SuccessHeader" Value="Vorgang abgeschlossen" />
+  <String Id="SuccessCacheHeader" Value="Dateien gespeichert" />
+  <String Id="SuccessInstallHeader" Value="Installation abgeschlossen" />
+  <String Id="SuccessLayoutHeader" Value="Installationsdateien gespeichert" />
+  <String Id="SuccessModifyHeader" Value="Änderungen abgeschlossen" />
+  <String Id="SuccessRepairHeader" Value="Reparatur abgeschlossen" />
+  <String Id="SuccessUninstallHeader" Value="Deinstallation abgeschlossen" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Deinstallation abgeschlossen" />
+  <String Id="SuccessLaunchButton" Value="simplebanking &amp;starten" />
+  <String Id="SuccessRestartText" Value="Bitte Windows neu starten, bevor du simplebanking verwendest." />
+  <String Id="SuccessUninstallRestartText" Value="Bitte Windows neu starten, um die Deinstallation abzuschließen." />
+  <String Id="SuccessRestartButton" Value="&amp;Neu starten" />
+  <String Id="SuccessCloseButton" Value="&amp;Schließen" />
+  <String Id="FailureHeader" Value="Installation fehlgeschlagen" />
+  <String Id="FailureCacheHeader" Value="Dateien konnten nicht gespeichert werden" />
+  <String Id="FailureInstallHeader" Value="Installation fehlgeschlagen" />
+  <String Id="FailureLayoutHeader" Value="Dateien konnten nicht abgelegt werden" />
+  <String Id="FailureModifyHeader" Value="Änderung fehlgeschlagen" />
+  <String Id="FailureRepairHeader" Value="Reparatur fehlgeschlagen" />
+  <String Id="FailureUninstallHeader" Value="Deinstallation fehlgeschlagen" />
+  <String Id="FailureUnsafeUninstallHeader" Value="Deinstallation fehlgeschlagen" />
+  <String Id="FailureHyperlinkLogText" Value="Der Vorgang konnte nicht abgeschlossen werden. Details findest du im &lt;a href=&quot;#&quot;&gt;Installationsprotokoll&lt;/a&gt;." />
+  <String Id="FailureRestartText" Value="Bitte Windows neu starten, um die Änderungen zurückzunehmen." />
+  <String Id="FailureRestartButton" Value="&amp;Neu starten" />
+  <String Id="FailureCloseButton" Value="&amp;Schließen" />
+  <String Id="FilesInUseTitle" Value="Programm noch geöffnet" />
+  <String Id="FilesInUseLabel" Value="Diese Programme verwenden Dateien, die aktualisiert werden müssen:" />
+  <String Id="FilesInUseNetfxCloseRadioButton" Value="Programme &amp;schließen." />
+  <String Id="FilesInUseCloseRadioButton" Value="Programme &amp;schließen und anschließend wieder starten." />
+  <String Id="FilesInUseDontCloseRadioButton" Value="Programme &amp;geöffnet lassen. Ein Windows-Neustart wird erforderlich." />
+  <String Id="FilesInUseRetryButton" Value="&amp;Erneut versuchen" />
+  <String Id="FilesInUseIgnoreButton" Value="&amp;Ignorieren" />
+  <String Id="FilesInUseExitButton" Value="&amp;Beenden" />
+</WixLocalization>

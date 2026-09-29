@@ -1,0 +1,4 @@
+Additional merchant marks used to identify the respective services:
+Netflix: https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png (linked by netflix.com)
+Spotify: https://open.spotifycdn.com/cdn/images/favicon32.b64ecc03.png (linked by spotify.com)
+Retrieved 2026-09-28. Logos/trademarks belong to their respective owners. This is source attribution, not a claim of an open-source trademark licence.

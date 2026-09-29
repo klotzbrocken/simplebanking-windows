@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-28",
+  "simplebanking": {
+    "repository": "https://github.com/klotzbrocken/simplebanking",
+    "commit": "933e158b0e0d87558943eeef21c97feea3e1423a",
+    "sha256": "AC5ED53087213BD34E0BAF28C46E383BF43240510267965DC74A4DFB6FF3144C"
+  },
+  "yaxi": {
+    "repository": "https://github.com/yaxitech/routex-client-cxx",
+    "commit": "3136fe1c0b9c2eee4d524ab12d2450d1470ac3d6",
+    "package": "routex-client-cxx",
+    "version": "0.2.0",
+    "sha256": "512148E158CCEA0E39ADC6915C2BD90E6EC58E88006B3CED916154FFD2C0804E"
+  },
+  "dotnet": "10.0.401",
+  "architecture": "win-x64"
+}

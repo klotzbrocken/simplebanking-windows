@@ -1,0 +1,34 @@
+namespace SimpleBanking;
+public sealed record RoundupResolution(string Id,string AccountId,List<DateOnly> Dates,decimal Amount,string State,string SavingsIban,string Recipient);
+internal static class RoundupMath
+{
+    internal static int Cents(decimal amount,int step){if(amount>=0||step<=0)return 0;decimal cents=decimal.Round(-amount*100,0,MidpointRounding.AwayFromZero);decimal remainder=cents%step;return remainder==0?0:(int)(step-remainder);}
+    internal static Dictionary<DateOnly,decimal> Days(IEnumerable<Entry> entries,int step,string savingsIban,ISet<DateOnly> excluded)=>entries.Where(e=>!e.Pending&&e.Currency=="EUR"&&e.Amount<0&&!excluded.Contains(e.Date)&&(savingsIban.Length==0||BankingRules.NormalizeIban(e.CounterpartyIban)!=savingsIban)).GroupBy(e=>e.Date).ToDictionary(g=>g.Key,g=>g.Sum(e=>Cents(e.Amount,step))/100m);
+}
+internal sealed partial class MainWindow
+{
+    void UpdateRoundupPayment(TransferDraft draft,string state){if(draft.RoundupId is not {} id)return;int index=data.Roundups.FindIndex(p=>p.Id==id);if(index>=0)data.Roundups[index]=data.Roundups[index] with{State=state};}
+    void ReleaseRoundup(TransferDraft draft){if(draft.RoundupId is {} id)data.Roundups.RemoveAll(p=>p.Id==id&&p.State=="Vorbereitet");Save();}
+    internal void OpenRoundups(){
+        if(!RequireUnlocked()||SelectedAccount is not {} account)return;if(account.Currency!="EUR"){MessageBox.Show(this,"Aufrunden ist für EUR-Konten verfügbar.");return;}
+        // Only unsubmitted preparations can be released. A submitted or uncertain bank request stays reserved.
+        if(!bankBusy&&data.Roundups.RemoveAll(p=>p.State=="Vorbereitet"&&!data.Payments.Any(payment=>payment.Draft.RoundupId==p.Id))>0)Save();
+        using var window=new Form{Text="Aufrunden · Spartopf",ClientSize=new Size(480,620),StartPosition=FormStartPosition.CenterParent,Font=Font,BackColor=BackColor};var body=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true,Padding=new Padding(22,18,0,14)};window.Controls.Add(body);
+        body.Controls.Add(DashboardWindow.Label("Aufrunden",20,true));var explanation=DashboardWindow.Label("Wähle Schrittweite und Zeitraum. ‚Jetzt sparen‘ öffnet die Überweisung mit Betrag und Empfänger. Du bestätigst sie anschließend selbst.",12);explanation.MaximumSize=new Size(410,0);body.Controls.Add(explanation);
+        body.Controls.Add(DashboardWindow.Label("SCHRITTWEITE",11,true));
+        var step=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,Width=410};step.Items.AddRange(["10 ct","50 ct","1 €","2 €","5 €","10 €"]);step.SelectedIndex=2;body.Controls.Add(step);
+        var today=DateOnly.FromDateTime(DateTime.Today);int selectedRange=0;
+        var ranges=new[]{("Heute",today,today),("Gestern",today.AddDays(-1),today.AddDays(-1)),("Vorgestern",today.AddDays(-2),today.AddDays(-2)),("Diesen Monat",new DateOnly(today.Year,today.Month,1),today)};
+        body.Controls.Add(DashboardWindow.Label("ZEITRAUM",11,true));var grid=new TableLayoutPanel{Width=410,Height=148,ColumnCount=2,RowCount=2};grid.ColumnStyles.Add(new(SizeType.Percent,50));grid.ColumnStyles.Add(new(SizeType.Percent,50));grid.RowStyles.Add(new(SizeType.Percent,50));grid.RowStyles.Add(new(SizeType.Percent,50));body.Controls.Add(grid);var rangeButtons=new List<Button>();
+        var iban=new TextBox{Width=410,PlaceholderText="Sparkonto-IBAN"};var recipient=new TextBox{Width=410,PlaceholderText="Kontoinhaber des Sparkontos"};var last=data.Roundups.LastOrDefault(p=>p.AccountId==account.Id);iban.Text=last?.SavingsIban??(demo?data.Accounts.Last().Iban:"");recipient.Text=last?.Recipient??(demo?"Tagesgeld · Demo":"");body.Controls.Add(DashboardWindow.Label("EMPFÄNGER · NAME",11,true));body.Controls.Add(recipient);body.Controls.Add(DashboardWindow.Label("IBAN",11,true));body.Controls.Add(iban);
+        var total=DashboardWindow.Label("",34,true);total.ForeColor=Color.FromArgb(38,150,115);body.Controls.Add(total);var detail=DashboardWindow.Label("",12);detail.MaximumSize=new Size(410,0);body.Controls.Add(detail);
+        Dictionary<DateOnly,decimal> Contributions(int? selection=null){var range=ranges[selection??selectedRange];var excluded=data.Roundups.Where(p=>p.AccountId==account.Id).SelectMany(p=>p.Dates).ToHashSet();return RoundupMath.Days(data.Entries.Where(e=>e.AccountId==account.Id&&e.Date>=range.Item2&&e.Date<=range.Item3),new[]{10,50,100,200,500,1000}[step.SelectedIndex],BankingRules.NormalizeIban(iban.Text),excluded).Where(p=>p.Value>0).ToDictionary();}
+        void Refresh(){var days=Contributions();total.Text="+ "+UiFormat.Money(days.Values.Sum(),"EUR");detail.Text=iban.Text.Length>0?(BankingRules.ValidIban(iban.Text)?"IBAN gültig":"IBAN ungültig — bitte prüfen"):"Bitte Sparkonto-IBAN eintragen";for(int i=0;i<rangeButtons.Count;i++){rangeButtons[i].Text=ranges[i].Item1+"\n"+UiFormat.Money(Contributions(i).Values.Sum(),"EUR");rangeButtons[i].BackColor=i==selectedRange?Color.FromArgb(220,242,233):Color.White;}}
+        for(int i=0;i<ranges.Length;i++){int index=i;var button=new Button{Dock=DockStyle.Fill,FlatStyle=FlatStyle.Flat,TextAlign=ContentAlignment.MiddleLeft};button.Click+=(_,_)=>{selectedRange=index;Refresh();};rangeButtons.Add(button);grid.Controls.Add(button,i%2,i/2);}
+        step.SelectedIndexChanged+=(_,_)=>Refresh();iban.TextChanged+=(_,_)=>Refresh();
+        RoundupResolution Value(string state){var days=Contributions();return new(Guid.NewGuid().ToString("N"),account.Id,days.Keys.ToList(),days.Values.Sum(),state,BankingRules.NormalizeIban(iban.Text),recipient.Text.Trim());}
+        body.Controls.Add(DashboardWindow.ActionButton("Virtuell behalten",()=>{var pot=Value("Virtuell behalten");if(pot.Amount<=0)return;data.Roundups.Add(pot);Save();Refresh();}));
+        body.Controls.Add(DashboardWindow.ActionButton(demo?"Jetzt sparen · Demo":"Jetzt sparen",()=>{var pot=Value("Vorbereitet");var draft=new TransferDraft(account.Id,pot.Recipient,pot.SavingsIban,pot.Amount,"simplebanking · Aufrunden",RoundupId:pot.Id);if(BankingRules.Validate(draft) is {} error){MessageBox.Show(window,error);return;}if(pot.SavingsIban==account.Iban){MessageBox.Show(window,"Bitte ein anderes Sparkonto wählen.");return;}data.Roundups.Add(pot);Save();window.Close();EditTransfer(draft);}));
+        body.Controls.Add(DashboardWindow.ActionButton("Spartopf-Verlauf",()=>{using var log=new Form{Text="Spartopf-Verlauf",ClientSize=new Size(630,350),StartPosition=FormStartPosition.CenterParent,Font=Font};var table=DashboardWindow.Table(["Zeitraum","Betrag","Status"]);foreach(var p in data.Roundups.Where(p=>p.AccountId==account.Id))table.Rows.Add(p.Dates.Count>0?p.Dates.Min().ToString("dd.MM.yyyy")+" – "+p.Dates.Max().ToString("dd.MM.yyyy"):"—",UiFormat.Money(p.Amount,"EUR"),p.State);log.Controls.Add(table);log.ShowDialog(window);}));Refresh();window.ShowDialog(this);
+    }
+}

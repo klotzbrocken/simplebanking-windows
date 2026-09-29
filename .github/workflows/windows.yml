@@ -1,0 +1,57 @@
+name: Windows build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      live_keys:
+        description: Embed configured YAXI credentials (maintainer build only)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.401'
+      - name: Load C++ build environment
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+          $vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (!$vs) { throw 'C++ build tools missing' }
+          Import-Module "$vs/Common7/Tools/Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          foreach ($name in @('PATH','INCLUDE','LIB','LIBPATH','VCToolsRedistDir')) {
+            "$name=$([Environment]::GetEnvironmentVariable($name))" >> $env:GITHUB_ENV
+          }
+      - name: Build and test
+        shell: pwsh
+        env:
+          EMBED_KEYS: ${{ github.event_name == 'workflow_dispatch' && inputs.live_keys }}
+          YAXI_KEY_ID: ${{ secrets.YAXI_KEY_ID }}
+          YAXI_SECRET_BASE64: ${{ secrets.YAXI_SECRET_BASE64 }}
+        run: |
+          $argsForBuild = @{ Test = $true }
+          if ($env:EMBED_KEYS -eq 'true') {
+            if (!$env:YAXI_KEY_ID -or !$env:YAXI_SECRET_BASE64) { throw 'YAXI repository secrets are missing' }
+            New-Item -ItemType Directory -Force .build | Out-Null
+            @{ KeyId=$env:YAXI_KEY_ID; SecretBase64=$env:YAXI_SECRET_BASE64 } | ConvertTo-Json | Set-Content .build/yaxi-keys.json
+            $argsForBuild.YaxiKeysFile = "$PWD/.build/yaxi-keys.json"
+          }
+          try { ./publish.ps1 @argsForBuild } finally {
+            if (Test-Path .build/yaxi-keys.json) { Remove-Item -LiteralPath .build/yaxi-keys.json }
+          }
+          ./build-installer.ps1
+          ./build-setup.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: simplebanking-windows-${{ github.run_number }}
+          path: |
+            simplebanking-Beta-Setup.exe
+            .build/test-results.json

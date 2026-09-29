@@ -1,0 +1,1374 @@
+[
+  {
+    "Pattern": "rewe",
+    "Name": "Rewe"
+  },
+  {
+    "Pattern": "nahkauf",
+    "Name": "Nahkauf"
+  },
+  {
+    "Pattern": "edeka",
+    "Name": "Edeka"
+  },
+  {
+    "Pattern": "marktkauf",
+    "Name": "Marktkauf"
+  },
+  {
+    "Pattern": "aldi",
+    "Name": "Aldi"
+  },
+  {
+    "Pattern": "lidl",
+    "Name": "Lidl"
+  },
+  {
+    "Pattern": "netto",
+    "Name": "Netto"
+  },
+  {
+    "Pattern": "kaufland",
+    "Name": "Kaufland"
+  },
+  {
+    "Pattern": "penny",
+    "Name": "Penny"
+  },
+  {
+    "Pattern": "norma",
+    "Name": "Norma"
+  },
+  {
+    "Pattern": "np discount",
+    "Name": "NP Discount"
+  },
+  {
+    "Pattern": "tegut",
+    "Name": "Tegut"
+  },
+  {
+    "Pattern": "alnatura",
+    "Name": "Alnatura"
+  },
+  {
+    "Pattern": "famila",
+    "Name": "Famila"
+  },
+  {
+    "Pattern": "combi markt",
+    "Name": "Combi"
+  },
+  {
+    "Pattern": "combi verbrauchermarkt",
+    "Name": "Combi"
+  },
+  {
+    "Pattern": "v-markt",
+    "Name": "V-Markt"
+  },
+  {
+    "Pattern": "mix markt",
+    "Name": "Mix Markt"
+  },
+  {
+    "Pattern": "trinkgut",
+    "Name": "Trinkgut"
+  },
+  {
+    "Pattern": "getraenke hoffmann",
+    "Name": "Getraenke Hoffmann"
+  },
+  {
+    "Pattern": "getränke hoffmann",
+    "Name": "Getraenke Hoffmann"
+  },
+  {
+    "Pattern": "reformhaus",
+    "Name": "Reformhaus"
+  },
+  {
+    "Pattern": "denns biomarkt",
+    "Name": "Denns Biomarkt"
+  },
+  {
+    "Pattern": "denn's biomarkt",
+    "Name": "Denns Biomarkt"
+  },
+  {
+    "Pattern": "tchibo",
+    "Name": "Tchibo"
+  },
+  {
+    "Pattern": "dm",
+    "Name": "dm"
+  },
+  {
+    "Pattern": "rossmann",
+    "Name": "Rossmann"
+  },
+  {
+    "Pattern": "müller drogerie",
+    "Name": "Müller"
+  },
+  {
+    "Pattern": "mueller drogerie",
+    "Name": "Müller"
+  },
+  {
+    "Pattern": "müller markt",
+    "Name": "Müller"
+  },
+  {
+    "Pattern": "mueller markt",
+    "Name": "Müller"
+  },
+  {
+    "Pattern": "müller",
+    "Name": "Müller"
+  },
+  {
+    "Pattern": "mueller",
+    "Name": "Müller"
+  },
+  {
+    "Pattern": "fielmann",
+    "Name": "Fielmann"
+  },
+  {
+    "Pattern": "apollo-optik",
+    "Name": "Apollo-Optik"
+  },
+  {
+    "Pattern": "apollo optik",
+    "Name": "Apollo-Optik"
+  },
+  {
+    "Pattern": "budnikowsky",
+    "Name": "Budnikowsky"
+  },
+  {
+    "Pattern": "douglas",
+    "Name": "Douglas"
+  },
+  {
+    "Pattern": "saturn",
+    "Name": "Saturn"
+  },
+  {
+    "Pattern": "mediamarkt",
+    "Name": "MediaMarkt"
+  },
+  {
+    "Pattern": "media markt",
+    "Name": "MediaMarkt"
+  },
+  {
+    "Pattern": "euronics",
+    "Name": "Euronics"
+  },
+  {
+    "Pattern": "mediamax",
+    "Name": "Mediamax"
+  },
+  {
+    "Pattern": "hercules",
+    "Name": "Hercules"
+  },
+  {
+    "Pattern": "thomann",
+    "Name": "Thomann"
+  },
+  {
+    "Pattern": "notebooksbilliger",
+    "Name": "Notebooksbilliger"
+  },
+  {
+    "Pattern": "gamestop",
+    "Name": "Gamestop"
+  },
+  {
+    "Pattern": "game stop",
+    "Name": "Gamestop"
+  },
+  {
+    "Pattern": "microsoft 365",
+    "Name": "Microsoft 365"
+  },
+  {
+    "Pattern": "microsoft",
+    "Name": "Microsoft"
+  },
+  {
+    "Pattern": "garmin",
+    "Name": "Garmin"
+  },
+  {
+    "Pattern": "lenovo",
+    "Name": "Lenovo"
+  },
+  {
+    "Pattern": "acer",
+    "Name": "Acer"
+  },
+  {
+    "Pattern": "expert",
+    "Name": "Expert"
+  },
+  {
+    "Pattern": "ikea",
+    "Name": "IKEA"
+  },
+  {
+    "Pattern": "hornbach",
+    "Name": "Hornbach"
+  },
+  {
+    "Pattern": "bauhaus",
+    "Name": "Bauhaus"
+  },
+  {
+    "Pattern": "hagebaumarkt",
+    "Name": "Hagebaumarkt"
+  },
+  {
+    "Pattern": "hellweg",
+    "Name": "Hellweg"
+  },
+  {
+    "Pattern": "toom",
+    "Name": "Toom"
+  },
+  {
+    "Pattern": "tedox",
+    "Name": "Tedox"
+  },
+  {
+    "Pattern": "thomas philipps",
+    "Name": "Thomas Philipps"
+  },
+  {
+    "Pattern": "obi",
+    "Name": "OBI"
+  },
+  {
+    "Pattern": "xxxlutz",
+    "Name": "XXXLutz"
+  },
+  {
+    "Pattern": "höffner",
+    "Name": "Höffner"
+  },
+  {
+    "Pattern": "hoeffner",
+    "Name": "Höffner"
+  },
+  {
+    "Pattern": "hoffner",
+    "Name": "Höffner"
+  },
+  {
+    "Pattern": "segmüller",
+    "Name": "Segmüller"
+  },
+  {
+    "Pattern": "segmueller",
+    "Name": "Segmüller"
+  },
+  {
+    "Pattern": "segmuller",
+    "Name": "Segmüller"
+  },
+  {
+    "Pattern": "poco",
+    "Name": "Poco"
+  },
+  {
+    "Pattern": "roller",
+    "Name": "Roller"
+  },
+  {
+    "Pattern": "jysk",
+    "Name": "JYSK"
+  },
+  {
+    "Pattern": "daenisches bettenlager",
+    "Name": "Daenisches Bettenlager"
+  },
+  {
+    "Pattern": "dänisches bettenlager",
+    "Name": "Daenisches Bettenlager"
+  },
+  {
+    "Pattern": "danisches bettenlager",
+    "Name": "Daenisches Bettenlager"
+  },
+  {
+    "Pattern": "sb-moebel boss",
+    "Name": "SB-Moebel Boss"
+  },
+  {
+    "Pattern": "sb-möbel boss",
+    "Name": "SB-Moebel Boss"
+  },
+  {
+    "Pattern": "sb-mobel boss",
+    "Name": "SB-Moebel Boss"
+  },
+  {
+    "Pattern": "moebel hardeck",
+    "Name": "Moebel Hardeck"
+  },
+  {
+    "Pattern": "möbel hardeck",
+    "Name": "Moebel Hardeck"
+  },
+  {
+    "Pattern": "moebel kraft",
+    "Name": "Moebel Kraft"
+  },
+  {
+    "Pattern": "möbel kraft",
+    "Name": "Moebel Kraft"
+  },
+  {
+    "Pattern": "moebel martin",
+    "Name": "Moebel Martin"
+  },
+  {
+    "Pattern": "möbel martin",
+    "Name": "Moebel Martin"
+  },
+  {
+    "Pattern": "moemax",
+    "Name": "Moemax"
+  },
+  {
+    "Pattern": "mömax",
+    "Name": "Moemax"
+  },
+  {
+    "Pattern": "porta moebel",
+    "Name": "Porta Moebel"
+  },
+  {
+    "Pattern": "porta möbel",
+    "Name": "Porta Moebel"
+  },
+  {
+    "Pattern": "porta mobel",
+    "Name": "Porta Moebel"
+  },
+  {
+    "Pattern": "dehner",
+    "Name": "Dehner"
+  },
+  {
+    "Pattern": "westwing",
+    "Name": "Westwing"
+  },
+  {
+    "Pattern": "maisons du monde",
+    "Name": "Maisons du Monde"
+  },
+  {
+    "Pattern": "h&m",
+    "Name": "H&M"
+  },
+  {
+    "Pattern": "zara",
+    "Name": "Zara"
+  },
+  {
+    "Pattern": "primark",
+    "Name": "Primark"
+  },
+  {
+    "Pattern": "deichmann",
+    "Name": "Deichmann"
+  },
+  {
+    "Pattern": "c&a",
+    "Name": "C&A"
+  },
+  {
+    "Pattern": "kik",
+    "Name": "KiK"
+  },
+  {
+    "Pattern": "new yorker",
+    "Name": "New Yorker"
+  },
+  {
+    "Pattern": "nkd",
+    "Name": "NKD"
+  },
+  {
+    "Pattern": "takko fashion",
+    "Name": "Takko Fashion"
+  },
+  {
+    "Pattern": "takko",
+    "Name": "Takko Fashion"
+  },
+  {
+    "Pattern": "ernstings family",
+    "Name": "Ernstings Family"
+  },
+  {
+    "Pattern": "ernsting's family",
+    "Name": "Ernstings Family"
+  },
+  {
+    "Pattern": "peek & cloppenburg",
+    "Name": "Peek & Cloppenburg"
+  },
+  {
+    "Pattern": "peek und cloppenburg",
+    "Name": "Peek & Cloppenburg"
+  },
+  {
+    "Pattern": "breuninger",
+    "Name": "Breuninger"
+  },
+  {
+    "Pattern": "galeria karstadt",
+    "Name": "Galeria"
+  },
+  {
+    "Pattern": "galeria",
+    "Name": "Galeria"
+  },
+  {
+    "Pattern": "woolworth",
+    "Name": "Woolworth"
+  },
+  {
+    "Pattern": "tedi",
+    "Name": "Tedi"
+  },
+  {
+    "Pattern": "adidas",
+    "Name": "Adidas"
+  },
+  {
+    "Pattern": "nike",
+    "Name": "Nike"
+  },
+  {
+    "Pattern": "puma",
+    "Name": "Puma"
+  },
+  {
+    "Pattern": "gucci",
+    "Name": "Gucci"
+  },
+  {
+    "Pattern": "mango",
+    "Name": "Mango"
+  },
+  {
+    "Pattern": "sheego",
+    "Name": "Sheego"
+  },
+  {
+    "Pattern": "ulla popken",
+    "Name": "Ulla Popken"
+  },
+  {
+    "Pattern": "trigema",
+    "Name": "Trigema"
+  },
+  {
+    "Pattern": "snipes",
+    "Name": "Snipes"
+  },
+  {
+    "Pattern": "bonprix",
+    "Name": "Bonprix"
+  },
+  {
+    "Pattern": "madeleine",
+    "Name": "Madeleine"
+  },
+  {
+    "Pattern": "net-a-porter",
+    "Name": "Net-a-Porter"
+  },
+  {
+    "Pattern": "net a porter",
+    "Name": "Net-a-Porter"
+  },
+  {
+    "Pattern": "calida",
+    "Name": "Calida"
+  },
+  {
+    "Pattern": "kindle unlimited",
+    "Name": "Kindle Unlimited"
+  },
+  {
+    "Pattern": "kindle",
+    "Name": "Kindle"
+  },
+  {
+    "Pattern": "amazon music",
+    "Name": "Amazon Music"
+  },
+  {
+    "Pattern": "amazon",
+    "Name": "Amazon"
+  },
+  {
+    "Pattern": "zalando",
+    "Name": "Zalando"
+  },
+  {
+    "Pattern": "about you",
+    "Name": "About You"
+  },
+  {
+    "Pattern": "aboutyou",
+    "Name": "About You"
+  },
+  {
+    "Pattern": "otto",
+    "Name": "Otto"
+  },
+  {
+    "Pattern": "baur",
+    "Name": "Baur"
+  },
+  {
+    "Pattern": "flaconi",
+    "Name": "Flaconi"
+  },
+  {
+    "Pattern": "spreadshirt",
+    "Name": "Spreadshirt"
+  },
+  {
+    "Pattern": "swarovski",
+    "Name": "Swarovski"
+  },
+  {
+    "Pattern": "hugendubel",
+    "Name": "Hugendubel"
+  },
+  {
+    "Pattern": "yves rocher",
+    "Name": "Yves Rocher"
+  },
+  {
+    "Pattern": "yves-rocher",
+    "Name": "Yves Rocher"
+  },
+  {
+    "Pattern": "amorelie",
+    "Name": "Amorelie"
+  },
+  {
+    "Pattern": "momox fashion",
+    "Name": "Momox Fashion"
+  },
+  {
+    "Pattern": "momox",
+    "Name": "Momox"
+  },
+  {
+    "Pattern": "contorion",
+    "Name": "Contorion"
+  },
+  {
+    "Pattern": "ebay",
+    "Name": "eBay"
+  },
+  {
+    "Pattern": "etsy",
+    "Name": "Etsy"
+  },
+  {
+    "Pattern": "intersport",
+    "Name": "Intersport"
+  },
+  {
+    "Pattern": "decathlon",
+    "Name": "Decathlon"
+  },
+  {
+    "Pattern": "sport 2000",
+    "Name": "Sport 2000"
+  },
+  {
+    "Pattern": "fressnapf",
+    "Name": "Fressnapf"
+  },
+  {
+    "Pattern": "das futterhaus",
+    "Name": "Das Futterhaus"
+  },
+  {
+    "Pattern": "thalia",
+    "Name": "Thalia"
+  },
+  {
+    "Pattern": "vedes",
+    "Name": "Vedes"
+  },
+  {
+    "Pattern": "weight watchers",
+    "Name": "Weight Watchers"
+  },
+  {
+    "Pattern": "apple music",
+    "Name": "Apple Music"
+  },
+  {
+    "Pattern": "apple tv+",
+    "Name": "Apple TV+"
+  },
+  {
+    "Pattern": "apple tv",
+    "Name": "Apple TV"
+  },
+  {
+    "Pattern": "apple arcade",
+    "Name": "Apple Arcade"
+  },
+  {
+    "Pattern": "apple icloud",
+    "Name": "iCloud"
+  },
+  {
+    "Pattern": "icloud",
+    "Name": "iCloud"
+  },
+  {
+    "Pattern": "apple services",
+    "Name": "Apple Services"
+  },
+  {
+    "Pattern": "apple",
+    "Name": "Apple"
+  },
+  {
+    "Pattern": "netflix",
+    "Name": "Netflix"
+  },
+  {
+    "Pattern": "disney+",
+    "Name": "Disney+"
+  },
+  {
+    "Pattern": "disney plus",
+    "Name": "Disney+"
+  },
+  {
+    "Pattern": "rtl+",
+    "Name": "RTL+"
+  },
+  {
+    "Pattern": "rtl plus",
+    "Name": "RTL+"
+  },
+  {
+    "Pattern": "dazn",
+    "Name": "DAZN"
+  },
+  {
+    "Pattern": "wow / sky",
+    "Name": "WOW"
+  },
+  {
+    "Pattern": "wowtv",
+    "Name": "WOW"
+  },
+  {
+    "Pattern": "waipu",
+    "Name": "Waipu.tv"
+  },
+  {
+    "Pattern": "magentatv",
+    "Name": "MagentaTV"
+  },
+  {
+    "Pattern": "magenta tv",
+    "Name": "MagentaTV"
+  },
+  {
+    "Pattern": "joyn plus",
+    "Name": "Joyn"
+  },
+  {
+    "Pattern": "joyn",
+    "Name": "Joyn"
+  },
+  {
+    "Pattern": "paramount+",
+    "Name": "Paramount+"
+  },
+  {
+    "Pattern": "paramount plus",
+    "Name": "Paramount+"
+  },
+  {
+    "Pattern": "zattoo",
+    "Name": "Zattoo"
+  },
+  {
+    "Pattern": "viaplay",
+    "Name": "Viaplay"
+  },
+  {
+    "Pattern": "hbo max",
+    "Name": "Max"
+  },
+  {
+    "Pattern": "crunchyroll",
+    "Name": "Crunchyroll"
+  },
+  {
+    "Pattern": "discovery+",
+    "Name": "Discovery+"
+  },
+  {
+    "Pattern": "curiositystream",
+    "Name": "CuriosityStream"
+  },
+  {
+    "Pattern": "sky",
+    "Name": "Sky"
+  },
+  {
+    "Pattern": "spotify",
+    "Name": "Spotify"
+  },
+  {
+    "Pattern": "deezer",
+    "Name": "Deezer"
+  },
+  {
+    "Pattern": "tidal",
+    "Name": "Tidal"
+  },
+  {
+    "Pattern": "soundcloud",
+    "Name": "SoundCloud"
+  },
+  {
+    "Pattern": "qobuz",
+    "Name": "Qobuz"
+  },
+  {
+    "Pattern": "napster",
+    "Name": "Napster"
+  },
+  {
+    "Pattern": "youtube music",
+    "Name": "YouTube Music"
+  },
+  {
+    "Pattern": "youtube",
+    "Name": "YouTube"
+  },
+  {
+    "Pattern": "xbox game pass",
+    "Name": "Xbox Game Pass"
+  },
+  {
+    "Pattern": "xbox",
+    "Name": "Xbox"
+  },
+  {
+    "Pattern": "playstation plus",
+    "Name": "PlayStation Plus"
+  },
+  {
+    "Pattern": "playstation",
+    "Name": "PlayStation"
+  },
+  {
+    "Pattern": "nintendo switch online",
+    "Name": "Nintendo Switch Online"
+  },
+  {
+    "Pattern": "nintendo",
+    "Name": "Nintendo"
+  },
+  {
+    "Pattern": "ubisoft+",
+    "Name": "Ubisoft+"
+  },
+  {
+    "Pattern": "ubisoft",
+    "Name": "Ubisoft"
+  },
+  {
+    "Pattern": "ea play",
+    "Name": "EA Play"
+  },
+  {
+    "Pattern": "geforce now",
+    "Name": "GeForce Now"
+  },
+  {
+    "Pattern": "humble choice",
+    "Name": "Humble Choice"
+  },
+  {
+    "Pattern": "humble",
+    "Name": "Humble"
+  },
+  {
+    "Pattern": "adobe creative cloud",
+    "Name": "Adobe"
+  },
+  {
+    "Pattern": "adobe",
+    "Name": "Adobe"
+  },
+  {
+    "Pattern": "dropbox",
+    "Name": "Dropbox"
+  },
+  {
+    "Pattern": "nordvpn",
+    "Name": "NordVPN"
+  },
+  {
+    "Pattern": "google one",
+    "Name": "Google One"
+  },
+  {
+    "Pattern": "google",
+    "Name": "Google"
+  },
+  {
+    "Pattern": "spiegel+",
+    "Name": "Spiegel+"
+  },
+  {
+    "Pattern": "spiegel plus",
+    "Name": "Spiegel+"
+  },
+  {
+    "Pattern": "bild+",
+    "Name": "Bild+"
+  },
+  {
+    "Pattern": "bild plus",
+    "Name": "Bild+"
+  },
+  {
+    "Pattern": "welt+",
+    "Name": "Welt+"
+  },
+  {
+    "Pattern": "faz+",
+    "Name": "FAZ+"
+  },
+  {
+    "Pattern": "faz plus",
+    "Name": "FAZ+"
+  },
+  {
+    "Pattern": "peloton",
+    "Name": "Peloton"
+  },
+  {
+    "Pattern": "freeletics",
+    "Name": "Freeletics"
+  },
+  {
+    "Pattern": "urban sports club",
+    "Name": "Urban Sports Club"
+  },
+  {
+    "Pattern": "mcfit",
+    "Name": "McFit"
+  },
+  {
+    "Pattern": "fitness first",
+    "Name": "Fitness First"
+  },
+  {
+    "Pattern": "clever fit",
+    "Name": "Clever Fit"
+  },
+  {
+    "Pattern": "calm",
+    "Name": "Calm"
+  },
+  {
+    "Pattern": "headspace",
+    "Name": "Headspace"
+  },
+  {
+    "Pattern": "audible",
+    "Name": "Audible"
+  },
+  {
+    "Pattern": "storytel",
+    "Name": "Storytel"
+  },
+  {
+    "Pattern": "scribd",
+    "Name": "Scribd"
+  },
+  {
+    "Pattern": "duolingo",
+    "Name": "Duolingo"
+  },
+  {
+    "Pattern": "lieferando",
+    "Name": "Lieferando"
+  },
+  {
+    "Pattern": "hellofresh",
+    "Name": "HelloFresh"
+  },
+  {
+    "Pattern": "hello fresh",
+    "Name": "HelloFresh"
+  },
+  {
+    "Pattern": "wolt",
+    "Name": "Wolt"
+  },
+  {
+    "Pattern": "mcdonald",
+    "Name": "McDonalds"
+  },
+  {
+    "Pattern": "starbucks",
+    "Name": "Starbucks"
+  },
+  {
+    "Pattern": "uber eats",
+    "Name": "Uber Eats"
+  },
+  {
+    "Pattern": "uber",
+    "Name": "Uber"
+  },
+  {
+    "Pattern": "glossybox",
+    "Name": "Glossybox"
+  },
+  {
+    "Pattern": "telekom",
+    "Name": "Telekom"
+  },
+  {
+    "Pattern": "vodafone",
+    "Name": "Vodafone"
+  },
+  {
+    "Pattern": "o2",
+    "Name": "O2"
+  },
+  {
+    "Pattern": "1&1",
+    "Name": "1&1"
+  },
+  {
+    "Pattern": "congstar",
+    "Name": "Congstar"
+  },
+  {
+    "Pattern": "freenet",
+    "Name": "Freenet"
+  },
+  {
+    "Pattern": "mobilcom",
+    "Name": "Mobilcom"
+  },
+  {
+    "Pattern": "deutsche bahn",
+    "Name": "Deutsche Bahn"
+  },
+  {
+    "Pattern": "db vertrieb",
+    "Name": "Deutsche Bahn"
+  },
+  {
+    "Pattern": "db fernverkehr",
+    "Name": "Deutsche Bahn"
+  },
+  {
+    "Pattern": "bahn.de",
+    "Name": "Deutsche Bahn"
+  },
+  {
+    "Pattern": "deutsche post",
+    "Name": "Deutsche Post"
+  },
+  {
+    "Pattern": "dhl",
+    "Name": "DHL"
+  },
+  {
+    "Pattern": "dpd",
+    "Name": "DPD"
+  },
+  {
+    "Pattern": "fedex",
+    "Name": "FedEx"
+  },
+  {
+    "Pattern": "hermes",
+    "Name": "Hermes"
+  },
+  {
+    "Pattern": "ups",
+    "Name": "UPS"
+  },
+  {
+    "Pattern": "kleinanzeigen",
+    "Name": "Kleinanzeigen"
+  },
+  {
+    "Pattern": "ebay kleinanzeigen",
+    "Name": "Kleinanzeigen"
+  },
+  {
+    "Pattern": "ebay-kleinanzeigen",
+    "Name": "Kleinanzeigen"
+  },
+  {
+    "Pattern": "hd plus",
+    "Name": "HD+"
+  },
+  {
+    "Pattern": "hd+",
+    "Name": "HD+"
+  },
+  {
+    "Pattern": "hdplus",
+    "Name": "HD+"
+  },
+  {
+    "Pattern": "paypal",
+    "Name": "PayPal"
+  },
+  {
+    "Pattern": "klarna",
+    "Name": "Klarna"
+  },
+  {
+    "Pattern": "wise",
+    "Name": "Wise"
+  },
+  {
+    "Pattern": "anthropic",
+    "Name": "Anthropic"
+  },
+  {
+    "Pattern": "claude.ai",
+    "Name": "Claude"
+  },
+  {
+    "Pattern": "claude",
+    "Name": "Claude"
+  },
+  {
+    "Pattern": "openai",
+    "Name": "OpenAI"
+  },
+  {
+    "Pattern": "chatgpt",
+    "Name": "OpenAI"
+  },
+  {
+    "Pattern": "formspree",
+    "Name": "Formspree"
+  },
+  {
+    "Pattern": "barmer",
+    "Name": "Barmer"
+  },
+  {
+    "Pattern": "aok",
+    "Name": "AOK"
+  },
+  {
+    "Pattern": "dak",
+    "Name": "DAK"
+  },
+  {
+    "Pattern": "rundfunkbeitrag",
+    "Name": "Rundfunkbeitrag"
+  },
+  {
+    "Pattern": "adac",
+    "Name": "ADAC"
+  },
+  {
+    "Pattern": "allianz",
+    "Name": "Allianz"
+  },
+  {
+    "Pattern": "axa",
+    "Name": "AXA"
+  },
+  {
+    "Pattern": "debeka",
+    "Name": "Debeka"
+  },
+  {
+    "Pattern": "devk",
+    "Name": "DEVK"
+  },
+  {
+    "Pattern": "ergo versicherung",
+    "Name": "Ergo"
+  },
+  {
+    "Pattern": "ergo direkt",
+    "Name": "Ergo"
+  },
+  {
+    "Pattern": "ergo",
+    "Name": "Ergo"
+  },
+  {
+    "Pattern": "generali",
+    "Name": "Generali"
+  },
+  {
+    "Pattern": "gothaer",
+    "Name": "Gothaer"
+  },
+  {
+    "Pattern": "hallesche",
+    "Name": "Hallesche"
+  },
+  {
+    "Pattern": "hanse merkur",
+    "Name": "HanseMerkur"
+  },
+  {
+    "Pattern": "hansemerkur",
+    "Name": "HanseMerkur"
+  },
+  {
+    "Pattern": "hdi versicherung",
+    "Name": "HDI"
+  },
+  {
+    "Pattern": "hdi lebensversicherung",
+    "Name": "HDI"
+  },
+  {
+    "Pattern": "hdi",
+    "Name": "HDI"
+  },
+  {
+    "Pattern": "huk-coburg",
+    "Name": "HUK-Coburg"
+  },
+  {
+    "Pattern": "huk coburg",
+    "Name": "HUK-Coburg"
+  },
+  {
+    "Pattern": "huk ",
+    "Name": "HUK-Coburg"
+  },
+  {
+    "Pattern": "lvm versicherung",
+    "Name": "LVM"
+  },
+  {
+    "Pattern": "lvm ",
+    "Name": "LVM"
+  },
+  {
+    "Pattern": "munichener ruck",
+    "Name": "Munich Re"
+  },
+  {
+    "Pattern": "munich re",
+    "Name": "Munich Re"
+  },
+  {
+    "Pattern": "nurnberger versicherung",
+    "Name": "Nürnberger"
+  },
+  {
+    "Pattern": "nuernberger versicherung",
+    "Name": "Nürnberger"
+  },
+  {
+    "Pattern": "nürnberger versicherung",
+    "Name": "Nürnberger"
+  },
+  {
+    "Pattern": "provinzial",
+    "Name": "Provinzial"
+  },
+  {
+    "Pattern": "r+v versicherung",
+    "Name": "R+V"
+  },
+  {
+    "Pattern": "r+v lebensversicherung",
+    "Name": "R+V"
+  },
+  {
+    "Pattern": "ruv versicherung",
+    "Name": "R+V"
+  },
+  {
+    "Pattern": "signal iduna",
+    "Name": "Signal Iduna"
+  },
+  {
+    "Pattern": "signal-iduna",
+    "Name": "Signal Iduna"
+  },
+  {
+    "Pattern": "sv sparkassenversicherung",
+    "Name": "SV SparkassenVersicherung"
+  },
+  {
+    "Pattern": "sv versicherung",
+    "Name": "SV SparkassenVersicherung"
+  },
+  {
+    "Pattern": "talanx",
+    "Name": "Talanx"
+  },
+  {
+    "Pattern": "versicherungskammer",
+    "Name": "Versicherungskammer Bayern"
+  },
+  {
+    "Pattern": "vgh versicherungen",
+    "Name": "VGH"
+  },
+  {
+    "Pattern": "vgh ",
+    "Name": "VGH"
+  },
+  {
+    "Pattern": "vhv versicherung",
+    "Name": "VHV"
+  },
+  {
+    "Pattern": "vhv allgemeine",
+    "Name": "VHV"
+  },
+  {
+    "Pattern": "vhv ",
+    "Name": "VHV"
+  },
+  {
+    "Pattern": "alte leipziger",
+    "Name": "Alte Leipziger"
+  },
+  {
+    "Pattern": "alte-leipziger",
+    "Name": "Alte Leipziger"
+  },
+  {
+    "Pattern": "arag versicherung",
+    "Name": "ARAG"
+  },
+  {
+    "Pattern": "arag",
+    "Name": "ARAG"
+  },
+  {
+    "Pattern": "bayerische versicherung",
+    "Name": "Die Bayerische"
+  },
+  {
+    "Pattern": "die bayerische",
+    "Name": "Die Bayerische"
+  },
+  {
+    "Pattern": "continentale",
+    "Name": "Continentale"
+  },
+  {
+    "Pattern": "wuestenrot",
+    "Name": "Wüstenrot"
+  },
+  {
+    "Pattern": "wüstenrot",
+    "Name": "Wüstenrot"
+  },
+  {
+    "Pattern": "württembergische",
+    "Name": "Württembergische"
+  },
+  {
+    "Pattern": "wurttembergische",
+    "Name": "Württembergische"
+  },
+  {
+    "Pattern": "zurich versicherung",
+    "Name": "Zurich"
+  },
+  {
+    "Pattern": "zurich insurance",
+    "Name": "Zurich"
+  },
+  {
+    "Pattern": "zurich gruppe",
+    "Name": "Zurich"
+  },
+  {
+    "Pattern": "aral",
+    "Name": "Aral"
+  },
+  {
+    "Pattern": "shell",
+    "Name": "Shell"
+  },
+  {
+    "Pattern": "esso",
+    "Name": "Esso"
+  },
+  {
+    "Pattern": "hem tankstell",
+    "Name": "HEM"
+  },
+  {
+    "Pattern": "hem ",
+    "Name": "HEM"
+  },
+  {
+    "Pattern": "avia tankstell",
+    "Name": "Avia"
+  },
+  {
+    "Pattern": "avia ",
+    "Name": "Avia"
+  },
+  {
+    "Pattern": "jet tankstell",
+    "Name": "JET"
+  },
+  {
+    "Pattern": "jet ",
+    "Name": "JET"
+  },
+  {
+    "Pattern": "totalenergies",
+    "Name": "Total Energies"
+  },
+  {
+    "Pattern": "total tankstell",
+    "Name": "Total Energies"
+  },
+  {
+    "Pattern": "tamoil",
+    "Name": "Tamoil"
+  },
+  {
+    "Pattern": "parship",
+    "Name": "Parship"
+  }
+]

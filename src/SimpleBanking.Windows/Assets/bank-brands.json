@@ -1,0 +1,206 @@
+[
+  {
+    "Id": "sparkasse",
+    "Keywords": [
+      "sparkasse",
+      "spk",
+      "stadtsparkasse",
+      "kreissparkasse",
+      "landessparkasse",
+      "nasspa",
+      "haspa",
+      "ospa"
+    ],
+    "Asset": "sparkasse"
+  },
+  {
+    "Id": "volksbank",
+    "Keywords": [
+      "volksbank",
+      "raiffeisenbank",
+      "vr bank",
+      "vr-bank",
+      "raiffeisen",
+      "voba",
+      "genobank",
+      "sparda"
+    ],
+    "Asset": "volk"
+  },
+  {
+    "Id": "deutsche-bank",
+    "Keywords": [
+      "deutsche bank"
+    ],
+    "Asset": "deutsche"
+  },
+  {
+    "Id": "commerzbank",
+    "Keywords": [
+      "commerzbank"
+    ],
+    "Asset": "commerz"
+  },
+  {
+    "Id": "postbank",
+    "Keywords": [
+      "postbank"
+    ],
+    "Asset": "post"
+  },
+  {
+    "Id": "unicredit",
+    "Keywords": [
+      "hypovereinsbank",
+      "hvb",
+      "unicredit"
+    ],
+    "Asset": "unicredit"
+  },
+  {
+    "Id": "ing",
+    "Keywords": [
+      "ing",
+      "ing-diba",
+      "ing diba",
+      "ing deutschland"
+    ],
+    "Asset": "ing"
+  },
+  {
+    "Id": "dkb",
+    "Keywords": [
+      "dkb",
+      "deutsche kreditbank"
+    ],
+    "Asset": "dkb"
+  },
+  {
+    "Id": "comdirect",
+    "Keywords": [
+      "comdirect"
+    ],
+    "Asset": "comdirect"
+  },
+  {
+    "Id": "consorsbank",
+    "Keywords": [
+      "consorsbank",
+      "consors",
+      "bnp paribas"
+    ],
+    "Asset": "consors"
+  },
+  {
+    "Id": "1822direkt",
+    "Keywords": [
+      "1822direkt",
+      "1822"
+    ],
+    "Asset": "1822direkt"
+  },
+  {
+    "Id": "n26",
+    "Keywords": [
+      "n26",
+      "number26"
+    ],
+    "Asset": "n26"
+  },
+  {
+    "Id": "c24",
+    "Keywords": [
+      "c24"
+    ],
+    "Asset": "c24"
+  },
+  {
+    "Id": "vivid",
+    "Keywords": [
+      "vivid"
+    ],
+    "Asset": "vivid"
+  },
+  {
+    "Id": "tomorrow",
+    "Keywords": [
+      "tomorrow"
+    ],
+    "Asset": "tomorrow"
+  },
+  {
+    "Id": "targobank",
+    "Keywords": [
+      "targobank",
+      "targo"
+    ],
+    "Asset": "targo"
+  },
+  {
+    "Id": "santander",
+    "Keywords": [
+      "santander"
+    ],
+    "Asset": "santander"
+  },
+  {
+    "Id": "psd",
+    "Keywords": [
+      "psd bank"
+    ],
+    "Asset": "psd"
+  },
+  {
+    "Id": "oldenburgische",
+    "Keywords": [
+      "oldenburgische landesbank",
+      "olb"
+    ],
+    "Asset": "olb"
+  },
+  {
+    "Id": "apobank",
+    "Keywords": [
+      "apobank",
+      "apo bank",
+      "apotheker"
+    ],
+    "Asset": "apo"
+  },
+  {
+    "Id": "gls",
+    "Keywords": [
+      "gls bank",
+      "gls gemeinschaftsbank"
+    ],
+    "Asset": "gls"
+  },
+  {
+    "Id": "triodos",
+    "Keywords": [
+      "triodos"
+    ],
+    "Asset": "triodos"
+  },
+  {
+    "Id": "ethikbank",
+    "Keywords": [
+      "ethikbank"
+    ],
+    "Asset": "ethik"
+  },
+  {
+    "Id": "bundesbank",
+    "Keywords": [
+      "bundesbank"
+    ],
+    "Asset": "bundes"
+  },
+  {
+    "Id": "revolut",
+    "Keywords": [
+      "revolut"
+    ],
+    "Asset": "revolut"
+  }
+]
