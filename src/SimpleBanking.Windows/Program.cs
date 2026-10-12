@@ -192,6 +192,7 @@ internal sealed partial class MainWindow : Form
         Disposed += (_, _) => themeWallpaper?.Dispose();
         ApplyPreferences();
         MinimumSize=MaximumSize=Size;
+        InitializeTodo();
         if(storageDirectory==null&&!demo){InitializeWindowsIntegration();InitializeAutomation();}
     }
     static Button Button(string text, Action action)
@@ -358,23 +359,25 @@ internal sealed partial class MainWindow : Form
     {
         Interlocked.Increment(ref securityEpoch);
         aiCategoryCancellation?.Cancel();aiCategoryQueue.Clear();
+        todoCancellation?.Cancel();
         logoCancellation?.Cancel();
         if (bankBusy) { MessageBox.Show(this, "Bitte den laufenden Bankvorgang zuerst abschließen."); return; }
         if (demo) { Hide(); return; }
         foreach(var form in OwnedForms.ToArray()){form.Close();if(!form.IsDisposed&&form is TransactionDetails)form.Dispose();}
         bankReadAccess.Clear();password = null; data = new(); Populate(); balance.Text = "Gesperrt"; status.Text = "Gesperrt";
     }
-    void Save() { if (!demo && password != null) store.Save(data, password); }
+    void Save() { if (!demo && password != null) store.Save(data, password); ScheduleTodo(); }
     void Transfer() => EditTransfer(SelectedAccount is {} account?data.Drafts.LastOrDefault(d=>d.AccountId==account.Id):null);
     void OpenEntryDetail(Entry entry)
     {
+        var detailSnapshot=entry;
         using var detail = new TransactionDetails(entry, BalancesHidden, changed => {
             var index = data.Entries.FindIndex(e => e.Id == changed.Id && e.AccountId == changed.AccountId);
             if (index < 0 || !Unlocked) return;
             var previous=data.Entries[index];
-            data.Entries[index] = changed with {CategoryManual=changed.Category!=entry.Category || changed.CategoryManual};
-            try{Save();}catch{data.Entries[index]=previous;throw;}RefreshEntries();
-        }, SetMerchantLogo,SaveMerchantRuleFromEntry);
+            data.Entries[index] = TodoSync.MergeDetail(previous,changed,detailSnapshot) with {CategoryManual=changed.Category!=entry.Category || changed.CategoryManual};
+            try{Save();}catch{data.Entries[index]=previous;throw;}detailSnapshot=changed;RefreshEntries();
+        }, SetMerchantLogo,SaveMerchantRuleFromEntry,()=>demo?"Demo · Erinnerung bleibt lokal.":data.ToDo.Enabled?"Wird mit Microsoft To Do abgeglichen.":"Erinnerung bleibt in simplebanking.");
         detail.ShowDialog(this);
     }
     void Dashboard() => OpenDashboard();

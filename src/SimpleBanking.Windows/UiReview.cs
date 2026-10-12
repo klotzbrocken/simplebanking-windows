@@ -68,6 +68,10 @@ internal static class UiReview
         } finally { Directory.Delete(vaultFolder, true); }
         var reportData=DemoData.Create(); MonthlyReport.Write(Path.Combine(folder,"simple.report-demo.pdf"),reportData.Accounts[0],reportData.Entries,reportData.Entries.Max(e=>e.Date));
         using var main = new MainWindow(true);
+        using(var todo=new MainWindow.TodoSettingsWindow(main)){
+            Capture(todo,"microsoft-todo-demo");todo.Show();
+            if(Descendants(todo).OfType<Button>().Single(b=>b.Text=="Mit Microsoft verbinden").Enabled)throw new InvalidOperationException("Demo allowed Microsoft sign-in.");todo.Hide();
+        }
         if (main.CurrentBalance != 3284.52m) throw new InvalidOperationException("Initial account selection is missing.");
         main.SelectAllAccounts();
         if (main.CurrentBalance != main.FlyoutAccounts().Sum(a => a.Balance)) throw new InvalidOperationException("Unified account selection failed.");

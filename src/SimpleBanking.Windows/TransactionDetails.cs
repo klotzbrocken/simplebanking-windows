@@ -3,12 +3,13 @@ internal sealed partial class TransactionDetails : Form
 {
     Entry entry;
     readonly Action<Entry> save;
+    readonly Func<string>? reminderStatus;
     Func<bool> flushNote=()=>true;
     internal bool FlushNote()=>flushNote();
     static readonly string[] categories = ["Einkommen","Essen & Alltag","Abos & Digital","Shopping","Versicherungen","Mobilität","Wohnen & Kredit","Sonstiges","Gastronomie","Sparen","Freizeit","Gehalt","Gesundheit","Umbuchungen"];
-    public TransactionDetails(Entry entry, bool hidden, Action<Entry> save, Func<Entry,byte[]?,Entry>? saveMerchantLogo = null,Action<Entry>? createMerchantRule = null)
+    public TransactionDetails(Entry entry, bool hidden, Action<Entry> save, Func<Entry,byte[]?,Entry>? saveMerchantLogo = null,Action<Entry>? createMerchantRule = null,Func<string>? reminderStatus=null)
     {
-        this.entry=entry;this.save=save;
+        this.entry=entry;this.save=save;this.reminderStatus=reminderStatus;
         Text="Buchungsdetails";ClientSize=new Size(400,688);StartPosition=FormStartPosition.CenterParent;
         FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;
         AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>Icon.Dispose();

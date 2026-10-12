@@ -7,13 +7,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>simplebanking</AssemblyName>
-    <Version>0.19.1</Version>
+    <Version>0.20.0</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <YaxiKeysFile Condition="'$(YaxiKeysFile)' == ''">$(MSBuildThisFileDirectory)..\..\secrets\yaxi-keys.json</YaxiKeysFile>
   </PropertyGroup>
   <ItemGroup>
+    <AssemblyMetadata Include="MicrosoftTodoClientId" Value="$(MicrosoftTodoClientId)" Condition="'$(MicrosoftTodoClientId)' != ''" />
     <EmbeddedResource Include="Assets\Fluent\*.png" />
     <PackageReference Include="PDFsharp-GDI" Version="6.2.4" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.90.1" />
     <PackageReference Include="Svg" Version="3.4.8" />
     <PackageReference Include="PDFtoImage" Version="5.4.0" />
     <Content Include="Assets\Themes\*.cfg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

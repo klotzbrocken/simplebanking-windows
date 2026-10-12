@@ -199,7 +199,7 @@ internal sealed partial class SettingsWindow : Form
                 TextLine("App-Passwort", true); Action("Passwort ändern …",()=>{owner.ChangeMasterPassword();if(!IsDisposed)ShowTab(4);}); Action("Sperren", owner.Lock); Action("Entsperren", owner.UnlockFromSettings);
                 TextLine("Sicherung", true); Action("Sicherung erstellen …", owner.BackupFromSettings); break;
             case 5:
-                TextLine("simplesend", true); Action("Lizenz aktivieren …",owner.ActivateSimpleSend); Action("Zahlungsjournal",owner.OpenPayments);Action("Vorlagen",owner.OpenPaymentTemplates);TextLine("CLI / MCP",true);Toggle("CLI / MCP aktivieren",prefs.AutomationEnabled,v=>prefs.AutomationEnabled=v,"Zugriff nur mit Client-Token und individuellen Berechtigungen bei entsperrter App. Überweisungsentwürfe benötigen eine Freigabe in simplebanking.");Action("Clients verwalten …",owner.ManageAutomationClients);Action("MCP-Entwürfe prüfen …",owner.ReviewAutomationDrafts);break;
+                TextLine("Erinnerungen",true);Action("Microsoft To Do …",owner.OpenTodoSettings);TextLine("simplesend", true); Action("Lizenz aktivieren …",owner.ActivateSimpleSend); Action("Zahlungsjournal",owner.OpenPayments);Action("Vorlagen",owner.OpenPaymentTemplates);TextLine("CLI / MCP",true);Toggle("CLI / MCP aktivieren",prefs.AutomationEnabled,v=>prefs.AutomationEnabled=v,"Zugriff nur mit Client-Token und individuellen Berechtigungen bei entsperrter App. Überweisungsentwürfe benötigen eine Freigabe in simplebanking.");Action("Clients verwalten …",owner.ManageAutomationClients);Action("MCP-Entwürfe prüfen …",owner.ReviewAutomationDrafts);break;
             case 6:
                 BuildAiSettings(); break;
             case 7: BuildAbout();break;

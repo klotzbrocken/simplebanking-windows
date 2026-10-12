@@ -11,11 +11,12 @@ public sealed record Entry(string Id, string AccountId, DateOnly Date, decimal A
     string Merchant, string Purpose, string Category, bool Pending = false, bool Read = false, bool Flagged = false, string Note = "",
     DateOnly? ValueDate = null, string CounterpartyIban = "", string CounterpartyBic = "", string AdditionalInformation = "", string PurposeCode = "", string? BankCounterpartyName = null, string EndToEndId = "", bool CategoryManual = false,
     List<BookingAttachment>? Attachments = null, DateTime? ReminderAt = null, bool ReminderDone = false, string? OriginalMerchant = null, byte[]? CustomLogo = null, string? MerchantOverride = null, [property: System.Text.Json.Serialization.JsonIgnore] byte[]? MerchantLogo = null,
-    string BankTransactionCode = "", string? MerchantSource = null, double? MerchantConfidence = null);
+    string BankTransactionCode = "", string? MerchantSource = null, double? MerchantConfidence = null, TodoLink? ToDo = null);
 public sealed record BookingAttachment(string Id,string Name,byte[] Content);
 public sealed record TransferDraft(string AccountId, string Name, string Iban, decimal Amount, string Purpose, DateOnly? Date = null, string? RoundupId = null);
 public sealed class BankData
 {
+    public TodoConnection ToDo {get;set;}=new();
     public List<AutomationClient> AutomationClients {get;set;}=[];
     public List<AutomationDraft> AutomationDrafts {get;set;}=[];
     public AiConfiguration Ai {get;set;}=new();
