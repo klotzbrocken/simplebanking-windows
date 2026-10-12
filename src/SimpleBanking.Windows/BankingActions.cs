@@ -9,6 +9,7 @@ namespace SimpleBanking;
 internal sealed partial class MainWindow
 {
     bool bankBusy;
+    internal event Action<string>? BankApprovalNeeded;
     readonly BankReadAccess bankReadAccess=new();
     void ConfigureYaxi()
     {
@@ -29,12 +30,14 @@ internal sealed partial class MainWindow
         status.Text = "Bankverbindung gespeichert. Kontostand und Umsätze können jetzt abgerufen werden.";
     }
     void RefreshBank() => RefreshBankRange(null);
-    async void RefreshBankRange(DateOnly? historyFrom)
+    void RefreshBankInBackground() => RefreshBankRange(null,false);
+    async void RefreshBankRange(DateOnly? historyFrom,bool allowInteractive=true)
     {
         if (!RequireUnlocked() || bankBusy || SelectedAccount is not { } account) return;
         if (demo) { status.Text = "Demo-Daten · Kein Netzwerkaufruf."; return; }
         if (data.Yaxi is not { } settings || data.Connections.FirstOrDefault(c => c.Id == account.ConnectionId) is not { } connection)
-        { MessageBox.Show(this, "Bankverbindung oder Yaxi-Konfiguration fehlt."); return; }
+        { if(allowInteractive)MessageBox.Show(this, "Bankverbindung oder Yaxi-Konfiguration fehlt."); return; }
+        if(!allowInteractive&&connection.ApprovalRequired)return;
         bankBusy = true; accounts.Enabled = false;
         try {
             using var client = new YaxiClient(settings.Integration); using var tickets = new TicketClient(settings); using var callback = new LoopbackCallback();
@@ -42,7 +45,7 @@ internal sealed partial class MainWindow
             var flow = new BankFlow(client);
             async Task<JsonObject> Run(string service, JsonObject request, JsonNode? ticketData = null) {
                 var result=await bankReadAccess.RunAsync(connection,service,request,()=>tickets.IssueAsync(service,ticketData,timeout.Token),
-                    next=>flow.RunAsync(next,service,r=>BankDialogs.Prompt(this,client,next["ticket"]!.GetValue<string>(),callback,r,timeout.Token),timeout.Token),timeout.Token);
+                    next=>flow.RunAsync(next,service,r=>BankDialogs.Prompt(this,client,next["ticket"]!.GetValue<string>(),callback,r,timeout.Token),timeout.Token,allowInteractive),timeout.Token,allowInteractive);
                 if (result["connectionData"] is JsonArray) {
                     connection = BankReadAccess.UpdatedConsent(connection,result);
                     var i = data.Connections.FindIndex(c => c.Id == connection.Id); data.Connections[i] = connection; Save();
@@ -73,7 +76,15 @@ internal sealed partial class MainWindow
             foreach (var e in entries) { data.Entries.RemoveAll(old => old.AccountId == account.Id && old.Id == e.Id); data.Entries.Add(e); }
             ApplyAnalysisRules(new HashSet<string>{account.Id},true);
             bool hasNewBookings=entries.Any(e=>!previous.ContainsKey(e.Id));
+            var connectionIndex=data.Connections.FindIndex(c=>c.Id==connection.Id);
+            data.Connections[connectionIndex]=connection with{ApprovalRequired=false};
             Save(); Populate(); if(hasNewBookings)NewBookings?.Invoke(); status.Text = "Aktualisiert · " + DateTime.Now.ToString("g") + ".";
+        }
+        catch (BankApprovalRequiredException) {
+            var connectionIndex=data.Connections.FindIndex(c=>c.Id==connection.Id);
+            if(connectionIndex>=0){data.Connections[connectionIndex]=connection with{ApprovalRequired=true};Save();}
+            Populate();status.Text=connection.Name+": neue Freigabe nötig. Bitte „Aktualisieren“ wählen. Automatischer Abruf pausiert.";
+            BankApprovalNeeded?.Invoke(connection.Name);
         }
         catch (Exception e) { status.Text = e is YaxiException or InvalidDataException or OperationCanceledException ? e.Message : "Bankabruf fehlgeschlagen: " + e.GetType().Name; Populate(); }
         finally { bankBusy = false; bankCancellation=null; accounts.Enabled = true; if(forceLockPending){forceLockPending=false;Lock();} }

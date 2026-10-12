@@ -1,6 +1,6 @@
-# Stand der Windows-Portierung — 0.16.0, 29.09.2026
+# Stand der Windows-Portierung — 0.17.0, 12.10.2026
 
-Referenz: Mac-Quellcode 2.0.7, Commit 933e158 (vollständige Herkunft unter provenance.json), ursprüngliche Assets und Yaxi SDK 0.2.0. Designreferenz zusätzlich: Desktop/export, insbesondere kombinierte Filter und Passwort-/Hello-Dialog (0.15–0.16, einschließlich Details, Tastenkappen und About-Karten). Diese aktuelle Matrix ersetzt die früheren Fortschrittslisten. **Vollständige Funktions- und Designparität ist nicht erreicht.**
+Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md), einschließlich Bankfreigaben, Fixkosten, Banklogos, Sicherungen und lesenden CLI/MCP-Auswertungen. Ursprüngliche Referenz: Mac-Quellcode 2.0.7, Commit 933e158 (vollständige Herkunft unter provenance.json), ursprüngliche Assets und Yaxi SDK 0.2.0. Designreferenz zusätzlich: Desktop/export, insbesondere kombinierte Filter und Passwort-/Hello-Dialog (0.15–0.16, einschließlich Details, Tastenkappen und About-Karten). Diese aktuelle Matrix ersetzt die früheren Fortschrittslisten. **Vollständige Funktions- und Designparität ist nicht erreicht.**
 
 | Bereich | Implementiert | Grenze / noch offen |
 |---|---|---|
@@ -18,7 +18,7 @@ Referenz: Mac-Quellcode 2.0.7, Commit 933e158 (vollständige Herkunft unter prov
 | Scanner | Lokale OCR Deutsch/Englisch, QR/GiroCode, PDF-Text und eingebettete Scanbilder, manuelle Prüfung der Felder | Keine vollständige PDF-Seitenrasterung; komplexe oder gedrehte Scans können scheitern |
 | Aufrunden (Weiterentwicklung geparkt) | 10/50 ct, 1/2/5/10 €, heute/gestern/vorgestern/Monat, virtuelle Rücklage, vorbereitete Auszahlung, reservierte/unklare Tage ausgeschlossen | Vollständiger Mac-Tagesledger, Hero-/Streak-Oberfläche und Nachbuchungslogik fehlen |
 | KI | Drei Original-Anbieter, persönliche verschlüsselte Keys, Chat-Opt-in, aktives Konto, begrenzter Gesprächsverlauf, Folgefragen/Abbruch, Kategorienvorschau; lokale Demo | Kein Live-Nachweis, keine SQL-Sandbox/volle Chat-UX, keine automatische Kategorisierung |
-| CLI / MCP | Sechs lokale Nur-Lese-Befehle mit Datum/Währung/Filtern und Pagination, stdio-MCP, Named Pipe nur aktueller Windows-Benutzer, entsperrt + Opt-in erforderlich | Nur Teilmenge des Mac-MCP; kein Raycast-Pendant, keine SQL-/Tokenverwaltung |
+| CLI / MCP | Acht lokale Nur-Lese-Befehle, einschließlich Fixkosten und Abos, mit Datum/Währung/Filtern und Pagination, stdio-MCP, Named Pipe nur aktueller Windows-Benutzer, entsperrt + Opt-in erforderlich | Nur Teilmenge des Mac-MCP; kein Raycast-Pendant, keine SQL-/Tokenverwaltung |
 | Demo | Getrennte Daten und Einstellungen, Abos/Historie, Reminder/Anhang, Vorlagen/Journal, simulierte Zahlungen, lokale Chat-Zusammenfassung, Zurücksetzen | Simulation ersetzt keine Bankabnahme |
 | REWE / dm / Amazon / PayPal (geparkt) | Noch nicht implementiert | Händler-Login, eBon-Abruf/Abgleich und zugehörige UX fehlen |
 

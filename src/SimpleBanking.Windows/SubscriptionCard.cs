@@ -6,7 +6,7 @@ internal sealed class SubscriptionCard : Control
     internal SubscriptionCard(Subscription item,string currency,Action<string> change,Action open){
         this.item=item;this.currency=currency;Height=112;Margin=new Padding(0,0,0,10);SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.StandardDoubleClick|ControlStyles.StandardClick|ControlStyles.ResizeRedraw,true);
         logo=MerchantArtwork.Load(item.Entries[0]);DoubleClick+=(_,_)=>open();AccessibleName=item.Name+" "+UiFormat.Money(item.LastAmount,currency);TabStop=true;
-        foreach(string option in new[]{"Abos","Verträge","Sparen","Verbindlichkeiten","Ausschließen"})menu.Items.Add(option=="Ausschließen"?"Kein Abo / Vertrag":option,null,(_,_)=>change(option));
+        foreach(string option in new[]{"Abos","Verträge","Sparen","Verbindlichkeiten","Ausschließen"})menu.Items.Add(option=="Ausschließen"?"Ausschließen (auch aus Fixkosten)":option,null,(_,_)=>change(option));
         if(item.Confidence<10)menu.Items.Insert(0,new ToolStripMenuItem("Als echt markieren",null,(_,_)=>change(item.Tab)));
         var edit=DashboardWindow.ActionButton("Ändern",()=>menu.Show(this,new Point(14,99)));edit.Location=new Point(14,70);edit.Height=27;Controls.Add(edit);
         if(item.CancellationUrl!=null&&item.Confidence>=10&&item.Tab!="Verbindlichkeiten"){

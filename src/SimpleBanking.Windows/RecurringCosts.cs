@@ -14,7 +14,7 @@ internal static class RecurringCosts
     internal static bool WordStart(string text,string marker)=>Regex.IsMatch(text,@"(?<!\p{L})"+Regex.Escape(marker),RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
     static bool Word(string text,string marker)=>Regex.IsMatch(text,@"(?<!\p{L})"+Regex.Escape(marker)+@"(?!\p{L})",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
     internal static bool StandingOrder(Entry entry)=>new[]{"DAUERAUFTR","STANDING ORDER","DAUERBUCHUNG"}.Any(m=>WordStart(entry.AdditionalInformation,m));
-    internal static string CanonicalMerchant(string name)=>aliasMatchers.FirstOrDefault(a=>a.Match.IsMatch(name)).Rule?.Name??name;
+    internal static string CanonicalMerchant(string name)=>IsPaymentProcessor(name)?name:aliasMatchers.FirstOrDefault(a=>a.Match.IsMatch(name)).Rule?.Name??name;
     internal static string Merchant(Entry entry) {
         string name=Regex.Replace(entry.Merchant,@"\s+"," ").Trim(' ','.',',',';','/','|');
         bool intermediary=new[]{"paypal","klarna","stripe","mollie","adyen","payone","sumup"}.Any(p=>Word(name,p));
@@ -25,9 +25,14 @@ internal static class RecurringCosts
             var match=Regex.Match(entry.Purpose,@"(?:ihr\s+einkauf\s+bei|purchase\s+at|paypal\s*\*)\s*(.+)$",RegexOptions.IgnoreCase);
             name=match.Success?match.Groups[1].Value.Trim():name+" · "+entry.Purpose.Trim();
         }
+        if(IsPaymentProcessor(name))return name;
         return aliasMatchers.FirstOrDefault(a=>a.Match.IsMatch(name)).Rule?.Name ?? name;
     }
     internal static string Category(string merchant)=>merchant=="Bankgebühren"?"bankFees":services.FirstOrDefault(s=>merchant.Contains(s.Pattern,StringComparison.OrdinalIgnoreCase))?.Category??"other";
+    internal static bool IsPaymentProcessor(string merchant) {
+        var name=" "+Regex.Replace(Regex.Replace(merchant.ToLowerInvariant(),@"[^a-z0-9 ]"," "),@"\s+"," ").Trim()+" ";
+        return new[]{"paypal","pp europe","klarna","sofort","sofortueberweisung","mollie","adyen","stripe","sumup","zettle","izettle","amazon payments","amazon pay","google pay","apple pay","concardis","nexi","unzer","payone","worldline","six payment services","shopify payments","ratepay","billpay","paysafe","skrill","wirecard","kartenzahlung intermediaer"}.Any(p=>name.Contains(" "+p+" ",StringComparison.Ordinal));
+    }
     internal static bool BankFee(Entry e,string? bankName) {
         if(e.Amount>=0)return false;
         var text=(e.Purpose+" "+e.AdditionalInformation).ToLowerInvariant();
@@ -39,7 +44,7 @@ internal static class RecurringCosts
         return bankName!=null && Tokens(party).Intersect(Tokens(bankName)).Any();
     }
     internal static List<RecurringPayment> Analyze(IEnumerable<Entry> entries,string? bankName=null,ISet<string>? excluded=null) {
-        var groups=entries.Where(e=>e.Amount<0).GroupBy(e=>{
+        var groups=entries.Where(e=>e.Amount<0&&!e.Pending).GroupBy(e=>{
             if(BankFee(e,bankName))return "Bankgebühren";
             var merchant=Merchant(e);var iban=e.CounterpartyIban;
             return Category(merchant)!="other" || iban.Length==0?merchant:merchant+"|"+iban[^Math.Min(8,iban.Length)..];
@@ -48,6 +53,7 @@ internal static class RecurringCosts
         foreach(var group in groups) {
             if(excluded?.Contains(group.Key)==true)continue;
             var list=group.OrderBy(e=>e.Date).ToList();var merchant=group.Key.Split('|')[0];
+            if(IsPaymentProcessor(merchant))continue;
             if(merchant=="Bankgebühren" && (list.Count<2 || list.Any(e=>Math.Abs(e.Amount-list[0].Amount)>=.01m) || list.Zip(list.Skip(1)).Any(p=>(p.Second.Date.DayNumber-p.First.Date.DayNumber) is <20 or >100)))continue;
             var standing=list.Any(StandingOrder);var known=Category(merchant)!="other";
             int months=list.Select(e=>(e.Date.Year,e.Date.Month)).Distinct().Count();
@@ -55,7 +61,8 @@ internal static class RecurringCosts
             if(standing && list.Count==1) {result.Add(new(merchant,group.Key,average,1,1,PaymentFrequency.Monthly,list[0].Date,Category(merchant),.55,list.Select(e=>e.Id).ToArray()));continue;}
             if(list.Count<2 || (months<2 && !standing))continue;
             double variance=(double)list.Max(e=>Math.Abs(Math.Abs(e.Amount)-average)/average);
-            if(variance >= ((known || standing) ? .50 : .35))continue;
+            double varianceLimit=list.Count==2&&!standing?(known?.15:.10):(known||standing?.50:.35);
+            if(variance >= varianceLimit)continue;
             double interval=list.Zip(list.Skip(1)).Average(p=>p.Second.Date.DayNumber-p.First.Date.DayNumber);
             var frequency=interval is >=25 and <=35?PaymentFrequency.Monthly:interval is >=85 and <=100?PaymentFrequency.Quarterly:interval is >=350 and <=380?PaymentFrequency.Yearly:PaymentFrequency.Irregular;
             if(frequency==PaymentFrequency.Yearly && list.Select(e=>e.Date.Year).Distinct().Count()<2)frequency=PaymentFrequency.Irregular;
@@ -74,7 +81,8 @@ internal static class RecurringCosts
         if(salaryArrival is {} arrival && arrival>start && arrival<=today)return(arrival,arrival.AddMonths(1));
         return(start,end);
     }
-    internal static decimal LeftToPay(IEnumerable<RecurringPayment> payments,DateOnly start,DateOnly end)=>payments.Where(p=>p.Frequency!=PaymentFrequency.Irregular && p.Confidence>=.6 && p.LastDate<start && NextExpected(p)<=end).Sum(p=>p.AverageAmount);
+    internal static IEnumerable<RecurringPayment> OutstandingPayments(IEnumerable<RecurringPayment> payments,DateOnly start,DateOnly end)=>payments.Where(p=>p.Frequency!=PaymentFrequency.Irregular && p.Confidence>=.6 && p.LastDate<start && NextExpected(p)>=start && NextExpected(p)<=end);
+    internal static decimal LeftToPay(IEnumerable<RecurringPayment> payments,DateOnly start,DateOnly end)=>OutstandingPayments(payments,start,end).Sum(p=>p.AverageAmount);
     internal static bool SalaryCredit(Entry e) {
         if(e.PurposeCode.Equals("SALA",StringComparison.OrdinalIgnoreCase))return true;
         var text=e.Purpose+" "+e.AdditionalInformation;

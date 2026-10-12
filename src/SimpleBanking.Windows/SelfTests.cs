@@ -44,6 +44,7 @@ internal static class SelfTests
             catch (Exception e) { failed++; results.Add(new { name, passed = false, error = e.GetType().Name + ": " + e.Message }); }
         }
         static void Check(bool condition) { if (!condition) throw new Exception("Assertion failed"); }
+        MacUpdateTests.Register(Test);
         Test("Remote logos use whitelist, persist cache and enforce daily request budget",()=>{
             string root=Path.Combine(Path.GetTempPath(),"sb-logo-test-"+Guid.NewGuid().ToString("N"));
             using var bitmap=new Bitmap(128,128);using var stream=new MemoryStream();bitmap.Save(stream,System.Drawing.Imaging.ImageFormat.Png);

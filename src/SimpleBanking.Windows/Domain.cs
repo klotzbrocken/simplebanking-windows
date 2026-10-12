@@ -97,7 +97,9 @@ public sealed class EncryptedStore(string root)
         var cipher = new byte[plain.Length]; var tag = new byte[16];
         try { using var aes = new AesGcm(key, 16); aes.Encrypt(nonce, plain, cipher, tag, Aad); }
         finally { CryptographicOperations.ZeroMemory(key); CryptographicOperations.ZeroMemory(plain); }
-        return JsonSerializer.SerializeToUtf8Bytes(new Envelope(1, Iterations, salt, nonce, tag, cipher));
+        var bytes=JsonSerializer.SerializeToUtf8Bytes(new Envelope(1, Iterations, salt, nonce, tag, cipher));
+        if(bytes.Length>64*1024*1024)throw new InvalidDataException("Die verschlüsselte Sicherung überschreitet 64 MB. Es wurden keine Daten ausgelassen.");
+        return bytes;
     }
     public static BankData Decrypt(byte[] bytes, string password)
     {
@@ -119,6 +121,14 @@ public sealed class EncryptedStore(string root)
         finally { CryptographicOperations.ZeroMemory(key); CryptographicOperations.ZeroMemory(plain); }
     }
     public BankData Load(string password) => Decrypt(File.ReadAllBytes(FilePath), password);
+    public static void WriteBackup(string path,BankData data,string password) {
+        var bytes=Encrypt(data,password);
+        var full=Path.GetFullPath(path);var temporary=full+"."+Guid.NewGuid().ToString("N")+".tmp";
+        try {
+            using(var stream=new FileStream(temporary,FileMode.CreateNew,FileAccess.Write,FileShare.None)){stream.Write(bytes);stream.Flush(true);}
+            File.Move(temporary,full,true);
+        }finally{if(File.Exists(temporary))File.Delete(temporary);}
+    }
     public void Save(BankData data, string password)
     {
         Directory.CreateDirectory(Root);

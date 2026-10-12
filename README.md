@@ -2,7 +2,7 @@
 
 Native Windows-Version von [simplebanking für macOS](https://github.com/klotzbrocken/simplebanking), von Maik Klotz. Kontostand im Systray-Flyout, Umsatzliste und Money Mood, Bankanbindung über YAXI.
 
-**Stand: 0.16.0 Beta.** Die vollständige Funktionsparität zur Mac-Version ist noch nicht erreicht. Echte Bankabläufe und Windows Hello müssen auf den jeweiligen Geräten und mit den jeweiligen Banken abgenommen werden. Details: [Funktionsstand](docs/PARITY.md).
+**Quellstand: 0.17.0 Beta.** Änderungen gegenüber der ersten Beta: [Mac-Abgleich Oktober 2026](docs/MAC-SYNC-2026-10.md). Die vollständige Funktionsparität zur Mac-Version ist noch nicht erreicht. Echte Bankabläufe und Windows Hello müssen auf den jeweiligen Geräten und mit den jeweiligen Banken abgenommen werden. Details: [Funktionsstand](docs/PARITY.md).
 
 ## Installation
 

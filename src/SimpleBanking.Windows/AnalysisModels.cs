@@ -35,7 +35,7 @@ internal static class Subscriptions
     static Cancellation[] Load(){using var stream=typeof(Subscriptions).Assembly.GetManifestResourceStream("SimpleBanking.Cancellation.json")!;return System.Text.Json.JsonSerializer.Deserialize<Cancellation[]>(stream)!;}
     internal static string Frequency(PaymentFrequency frequency)=>frequency switch{PaymentFrequency.Monthly=>"Monatlich",PaymentFrequency.Quarterly=>"Vierteljährlich",PaymentFrequency.Yearly=>"Jährlich",_=>"Unregelmäßig"};
     internal static List<Subscription> Detect(IEnumerable<Entry> source,string? bankName=null,IReadOnlyList<AssignmentRule>? rules=null,IReadOnlyDictionary<string,string>? assignments=null) {
-        var list=source.Where(e=>e.Amount<0&&!new[]{"erstattung","rückzahlung","retoure","umbuchung","übertrag auf konto"}.Any(e.Purpose.ToLowerInvariant().Contains)).ToList();
+        var list=source.Where(e=>!e.Pending&&e.Amount<0&&!new[]{"erstattung","rückzahlung","retoure","umbuchung","übertrag auf konto"}.Any(e.Purpose.ToLowerInvariant().Contains)).ToList();
         string Group(Entry e){
             if(RecurringCosts.BankFee(e,bankName))return "Bankgebühren";
             var merchant=RecurringCosts.Merchant(e);var category=RecurringCosts.Category(merchant);
@@ -48,7 +48,7 @@ internal static class Subscriptions
         foreach(var group in list.GroupBy(Group)) {
             var rows=group.OrderBy(e=>e.Date).ToArray();bool standing=rows.Any(RecurringCosts.StandingOrder);if(rows.Length<2&&!standing)continue;
             string name=group.Key.Split('|')[0],lower=name.ToLowerInvariant(),category=RecurringCosts.Category(name);
-            if(new[]{"paypal europe","klarna bank","amazon payments","google payment","apple pay"}.Any(lower.Contains))continue;
+            if(RecurringCosts.IsPaymentProcessor(name))continue;
             decimal avg=rows.Average(e=>-e.Amount),dev=rows.Max(e=>Math.Abs(-e.Amount-avg)),variance=dev/avg;
             var gaps=rows.Zip(rows.Skip(1)).Select(p=>p.Second.Date.DayNumber-p.First.Date.DayNumber).ToArray();
             if(category=="bankFees" && (rows.Length<2||dev>=.01m||gaps.Any(d=>d<20||d>100)))continue;
@@ -62,7 +62,7 @@ internal static class Subscriptions
             if(score<7)continue;
             string tab=category switch {"finance"=>"Sparen","bankFees" or "insurance" or "utilities"=>"Verbindlichkeiten","telecom" or "transport"=>"Verträge","membership" when new[]{"mcfit","clever fit","cleverfit","urban sports","fitx","fitness first","kieser","yoga","pilates","holmes place","john reed","sportstudio","fitnessclub","crossfit","anytime fitness"}.Any(lower.Contains)=>"Verträge",_=>new[]{"versicherung","krankenkasse","aok","barmer","debeka","stadtwerke","eon ","rwe","vattenfall","enpal","wohnungsbau","mietverwaltung","hausverwaltung","mietvertrag","kreditrate","kreditabrechnung","miete"}.Any(lower.Contains)?"Verbindlichkeiten":"Abos"};
             var cadence=monthly?PaymentFrequency.Monthly:PaymentFrequency.Irregular;
-            string? action=assignments?.GetValueOrDefault(rows[0].AccountId+"/"+group.Key)??AssignmentRules.Sorted(rules??[]).FirstOrDefault(r=>r.Recurring!=null&&rows.Any(e=>AssignmentRules.Matches(r,e,cadence)))?.Recurring;
+            string? action=RecurringAssignmentKeys.Find(assignments,rows[0].AccountId,group.Key)??AssignmentRules.Sorted(rules??[]).FirstOrDefault(r=>r.Recurring!=null&&rows.Any(e=>AssignmentRules.Matches(r,e,cadence)))?.Recurring;
             if(action=="Ausschließen")continue;if(action!=null){tab=action;score=Math.Max(score,10);}
             result.Add(new(group.Key,cancel?.Name??name,avg,-rows[^1].Amount,rows[^1].Date,cadence,score,category,tab,rows,cancel?.Url));
         }

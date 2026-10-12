@@ -36,6 +36,7 @@ internal sealed class TrayContext : ApplicationContext
     readonly System.Windows.Forms.Timer activationTimer;
     readonly System.Windows.Forms.Timer reminderTimer=new(){Interval=30000};
     int shownReminders;
+    bool bankApprovalNotification;
     long lastDoubleClick;
     bool exiting;
     readonly System.Windows.Forms.Timer clickTimer=new() {Interval=SystemInformation.DoubleClickTime};
@@ -53,6 +54,7 @@ internal sealed class TrayContext : ApplicationContext
         menu.Items.Add("Beenden", null, (_, _) => ExitThread());
         tray = new NotifyIcon { Icon = trayIcon, Text = "simplebanking · Konten", ContextMenuStrip = menu, Visible = false };
         window.BalanceChanged+=UpdateTrayIcon;UpdateTrayIcon();
+        window.BankApprovalNeeded+=bank=>{bankApprovalNotification=true;tray.ShowBalloonTip(6000,bank+": neue Freigabe nötig","Automatischer Abruf pausiert. Öffne simplebanking und wähle Aktualisieren, um die Bankfreigabe zu starten.",ToolTipIcon.Info);};
         clickTimer.Tick+=(_,_)=>{clickTimer.Stop();if(window.IsLocked)window.OpenMainWindow();else flyout.ShowAtTray();};
         tray.MouseClick += (_, e) => { if(e.Button==MouseButtons.Left && Environment.TickCount64-lastDoubleClick>SystemInformation.DoubleClickTime) {clickTimer.Stop();clickTimer.Start();} };
         tray.MouseDoubleClick+=(_,e)=>{if(e.Button==MouseButtons.Left){lastDoubleClick=Environment.TickCount64;clickTimer.Stop();if(!flyout.IsPinned)flyout.Hide();Open();}};
@@ -61,7 +63,7 @@ internal sealed class TrayContext : ApplicationContext
         // Explorer can create/recreate the notification area after the app starts.
         // Register twice so the icon is present even when the initial shell callback is missed.
         tray.Visible = true;
-        reminderTimer.Tick+=(_,_)=>{int count=window.DueReminderCount();if(count>shownReminders&&!demo){tray.ShowBalloonTip(5000,"simplebanking",count+" fällige Erinnerungen",ToolTipIcon.Info);}shownReminders=count;};reminderTimer.Start();tray.BalloonTipClicked+=(_,_)=>window.OpenAttentionInbox();
+        reminderTimer.Tick+=(_,_)=>{int count=window.DueReminderCount();if(count>shownReminders&&!demo){bankApprovalNotification=false;tray.ShowBalloonTip(5000,"simplebanking",count+" fällige Erinnerungen",ToolTipIcon.Info);}shownReminders=count;};reminderTimer.Start();tray.BalloonTipClicked+=(_,_)=>{if(bankApprovalNotification)Open();else window.OpenAttentionInbox();};
         trayRepairTimer = new() { Interval = 1500 };
         trayRepairTimer.Tick += (_, _) => { tray.Visible = false; tray.Visible = true; trayRepairTimer.Stop(); };
         trayRepairTimer.Start();
@@ -183,7 +185,7 @@ internal sealed partial class MainWindow : Form
         accounts.SelectedIndexChanged += (_, _) => { unifiedAccounts = false; RefreshEntries(); }; search.TextChanged += (_, _) => RefreshEntries();
         if (demo) { data = DemoData.Create(); password = null; Populate(); status.Text = "DEMO · Beispieldaten"; }
         else { status.Text = "Gesperrt · Zum Entsperren auf … klicken"; balance.Text = "Willkommen"; }
-        refreshTimer.Tick += (_, _) => { if (Unlocked && !bankBusy) RefreshBank(); };
+        refreshTimer.Tick += (_, _) => { if (Unlocked && !bankBusy) RefreshBankInBackground(); };
         Disposed += (_, _) => {refreshTimer.Dispose();logoCancellation?.Cancel();};
         Disposed += (_, _) => themeWallpaper?.Dispose();
         ApplyPreferences();
@@ -305,7 +307,7 @@ internal sealed partial class MainWindow : Form
                 string helloPassword=Hello.Unlock(Handle);
                 if(epoch!=Volatile.Read(ref securityEpoch))return;
                 UnlockVault(helloPassword);status.Text="";
-                if(Preferences.LoadTransactionsOnStart)RefreshBank();
+                if(Preferences.LoadTransactionsOnStart)RefreshBankInBackground();
                 return;
             } catch(Exception error) when(error is System.Security.Cryptography.CryptographicException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException) {
                 if(epoch!=Volatile.Read(ref securityEpoch))return;
@@ -334,7 +336,7 @@ internal sealed partial class MainWindow : Form
             }catch(Exception e) when(e is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException){MessageBox.Show(this,"Der Tresor konnte nicht zurückgesetzt werden. Die Einrichtung wurde nicht geändert.");}
             return;
         }
-        if(result==DialogResult.OK&&epoch==Volatile.Read(ref securityEpoch)&&Unlocked){status.Text="";if(Preferences.LoadTransactionsOnStart)RefreshBank();}
+        if(result==DialogResult.OK&&epoch==Volatile.Read(ref securityEpoch)&&Unlocked){status.Text="";if(Preferences.LoadTransactionsOnStart)RefreshBankInBackground();}
     }
 
     internal void RunFirstSetup()
@@ -387,7 +389,8 @@ internal sealed partial class MainWindow : Form
         if (!RequireUnlocked()) return;
         var p = password ?? Prompt("Sicherungspasswort", "Passwort für die Demo-Sicherung (mindestens 6 Zeichen)", true); if (p == null || p.Length < 6) return;
         using var dialog = new SaveFileDialog { Filter = "Verschlüsselte Sicherung|*.sbw", FileName = "simplebanking-backup.sbw" }; if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        File.WriteAllBytes(dialog.FileName, EncryptedStore.Encrypt(data, p)); status.Text = "Verschlüsselte Sicherung erstellt.";
+        try { EncryptedStore.WriteBackup(dialog.FileName,data,p); status.Text = "Verschlüsselte Sicherung erstellt."; }
+        catch(Exception e) when(e is IOException or UnauthorizedAccessException) { MessageBox.Show(this,"Sicherung konnte nicht vollständig gespeichert werden. Eine bestehende Sicherung wurde nicht ersetzt."); }
     }
     void Restore()
     {
