@@ -2,7 +2,7 @@ namespace SimpleBanking;
 internal static class ThemeFiles
 {
     static readonly string[] colors=["accent","positive","negative","positiveLight","positiveDark","negativeLight","negativeDark","cardLight","cardDark","panelLight","panelDark","inkLight","inkDark","screenBorder"];
-    static readonly string[] switches=["lofiTypography","ripple","merchantLogos","bankLogos","categoryIcons","uppercase","dottedLeaders","squareControls","glyphControls"];
+    static readonly string[] switches=["lofiTypography","accountRing","ripple","merchantLogos","bankLogos","categoryIcons","uppercase","dottedLeaders","squareControls","glyphControls"];
     internal static Dictionary<string,string> Read(string text){
         if(text.Length>65536)throw new InvalidDataException("Die Theme-Datei ist zu groß.");
         var values=ThemePalette.Parse(text);
@@ -19,10 +19,10 @@ internal sealed partial class SettingsWindow
     void ApplyTheme(ThemePackage? package){var id=prefs.ThemeId;var values=prefs.CustomTheme;var images=prefs.CustomThemeImages;try{prefs.ThemeId=package==null?"default":"custom";prefs.CustomTheme=package?.Values??prefs.CustomTheme;prefs.CustomThemeImages=package?.Images??prefs.CustomThemeImages;Save();ShowTab(3);}catch{prefs.ThemeId=id;prefs.CustomTheme=values;prefs.CustomThemeImages=images;owner.ApplyPreferences();throw;}}
     void ImportTheme(){
         using var dialog=new OpenFileDialog{Filter="simplebanking Theme|*.cfg;*.zip",Title="Theme importieren"};if(dialog.ShowDialog(this)!=DialogResult.OK)return;
-        try{var package=ThemePackage.Read(dialog.FileName);using var preview=new ThemePreview(package);if(preview.ShowDialog(this)==DialogResult.OK)ApplyTheme(package);}catch(Exception e) when(e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or OutOfMemoryException){MessageBox.Show(this,e.Message,"Theme konnte nicht importiert werden");}
+        try{var package=ThemePackage.Read(dialog.FileName);using var preview=new ThemePreview(package);if(preview.ShowDialog(this)==DialogResult.OK)ApplyTheme(package);}catch(Exception e) when(e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or OutOfMemoryException or System.Xml.XmlException or InvalidOperationException or System.Runtime.InteropServices.ExternalException){MessageBox.Show(this,e.Message,"Theme konnte nicht importiert werden");}
     }
     void ExportTheme(){
         using var dialog=new SaveFileDialog{Filter="simplebanking Theme-Paket|*.zip|Farbtheme ohne Grafiken|*.cfg",FileName="simplebanking-theme.zip"};if(dialog.ShowDialog(this)!=DialogResult.OK)return;
-        try{var values=prefs.ThemeId=="custom"&&prefs.CustomTheme!=null?prefs.CustomTheme:ThemePalette.BuiltIns.GetValueOrDefault(prefs.ThemeId)??ThemePalette.BuiltIns["default"];if(dialog.FilterIndex==2){if(prefs.ThemeId=="custom"&&prefs.CustomThemeImages?.Count>0)throw new IOException("Für ein Theme mit Grafiken bitte ZIP als Dateityp auswählen.");File.WriteAllText(dialog.FileName,ThemeFiles.Write(values));}else new ThemePackage(values,prefs.ThemeId=="custom"?prefs.CustomThemeImages??new():new()).Write(dialog.FileName);}catch(Exception e) when(e is IOException or UnauthorizedAccessException){MessageBox.Show(this,e.Message,"Theme konnte nicht exportiert werden");}
+        try{var values=prefs.ThemeId=="custom"&&prefs.CustomTheme!=null?prefs.CustomTheme:ThemePalette.BuiltIns.GetValueOrDefault(prefs.ThemeId)??ThemePalette.BuiltIns["default"];if(dialog.FilterIndex==2){if(prefs.ThemeId=="custom"&&prefs.CustomThemeImages?.Count>0)throw new IOException("Für ein Theme mit Grafiken oder Schriften bitte ZIP als Dateityp auswählen.");File.WriteAllText(dialog.FileName,ThemeFiles.Write(values));}else new ThemePackage(values,prefs.ThemeId=="custom"?prefs.CustomThemeImages??new():new()).Write(dialog.FileName);}catch(Exception e) when(e is IOException or UnauthorizedAccessException){MessageBox.Show(this,e.Message,"Theme konnte nicht exportiert werden");}
     }
 }

@@ -44,6 +44,7 @@ internal static class SelfTests
             catch (Exception e) { failed++; results.Add(new { name, passed = false, error = e.GetType().Name + ": " + e.Message }); }
         }
         static void Check(bool condition) { if (!condition) throw new Exception("Assertion failed"); }
+        MacUpdateTests.Register(Test);PriorityOneTests.Register(Test);
         Test("Remote logos use whitelist, persist cache and enforce daily request budget",()=>{
             string root=Path.Combine(Path.GetTempPath(),"sb-logo-test-"+Guid.NewGuid().ToString("N"));
             using var bitmap=new Bitmap(128,128);using var stream=new MemoryStream();bitmap.Save(stream,System.Drawing.Imaging.ImageFormat.Png);
@@ -501,6 +502,9 @@ internal static class SelfTests
         Test("Wrong password rejected", () => { var bytes = EncryptedStore.Encrypt(DemoData.Create(), "correct"); try { EncryptedStore.Decrypt(bytes, "wrong"); } catch (CryptographicException) { return; } throw new Exception("Accepted wrong password"); });
         Test("Tampering rejected", () => { var bytes = EncryptedStore.Encrypt(DemoData.Create(), "correct"); var node = System.Text.Json.Nodes.JsonNode.Parse(bytes)!; var cipher = Convert.FromBase64String(node["Ciphertext"]!.GetValue<string>()); cipher[0] ^= 1; node["Ciphertext"] = Convert.ToBase64String(cipher); try { EncryptedStore.Decrypt(JsonSerializer.SerializeToUtf8Bytes(node), "correct"); } catch (CryptographicException) { return; } throw new Exception("Accepted modified ciphertext"); });
         Test("Cross-account currency inconsistency rejected", () => { var d = DemoData.Create(); d.Entries[0] = d.Entries[0] with { Currency = "USD" }; try { EncryptedStore.Decrypt(EncryptedStore.Encrypt(d, "test"), "test"); } catch (InvalidDataException) { return; } throw new Exception("Accepted inconsistent backup"); });
+        PriorityTwoTests.Register(Test);
+        DesktopRegressionTests.Register(Test);
+        TodoTests.Register(Test);
         var report = JsonSerializer.Serialize(new { passed = results.Count - failed, failed, tests = results }, new JsonSerializerOptions { WriteIndented = true });
         var index = Array.IndexOf(args, "--report");
         if (index >= 0 && index + 1 < args.Length) File.WriteAllText(args[index + 1], report);

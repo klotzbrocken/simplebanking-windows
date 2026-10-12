@@ -24,7 +24,7 @@ internal static class BankArtwork
                 "50040000" or "50080000"=>"commerzbank", "50010517"=>"ing", "12030000"=>"dkb",
                 "10011001"=>"n26", "10022400"=>"c24", "50010060" or "44010046"=>"postbank",
                 "30020900"=>"targobank", "20041111" or "20041133"=>"comdirect", "10077777"=>"norisbank", "10010010"=>"revolut",
-                _=>blz.StartsWith("120")?"dkb":blz.StartsWith("200")?"comdirect":blz[3]=='5'?"sparkasse":blz[3] is '6' or '9'?"volksbank":null
+                _=>blz[3]=='5'?"sparkasse":blz[3] is '6' or '9'?"volksbank":blz.StartsWith("120")?"dkb":blz.StartsWith("200")?"comdirect":null
             };
             if(Asset(id) is {} byIban)return byIban;
         }

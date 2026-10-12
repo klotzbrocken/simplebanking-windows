@@ -2,7 +2,7 @@
 
 Native Windows-Version von [simplebanking für macOS](https://github.com/klotzbrocken/simplebanking), von Maik Klotz. Kontostand im Systray-Flyout, Umsatzliste und Money Mood, Bankanbindung über YAXI.
 
-**Stand: 0.16.0 Beta.** Die vollständige Funktionsparität zur Mac-Version ist noch nicht erreicht. Echte Bankabläufe und Windows Hello müssen auf den jeweiligen Geräten und mit den jeweiligen Banken abgenommen werden. Details: [Funktionsstand](docs/PARITY.md).
+**Quellstand: 0.20.0 Beta.** Neu: [Microsoft-To-Do-Anbindung und einmalige Registrierung](docs/MICROSOFT-TODO.md). Neu: [Desktop-Stabilität und große Tresore](docs/DESKTOP-STABILITY.md). Neu: [Prio 2 – Updater, Scanner, CAMT, KI und MCP](docs/P2-IMPLEMENTATION.md). Außerdem: [Prio-1-Umsetzung für Themes, Händlerregeln und Auswertungen](docs/P1-IMPLEMENTATION.md). Änderungen gegenüber der ersten Beta: [Mac-Abgleich Oktober 2026](docs/MAC-SYNC-2026-10.md). Die vollständige Funktionsparität zur Mac-Version ist noch nicht erreicht. Echte Bankabläufe und Windows Hello müssen auf den jeweiligen Geräten und mit den jeweiligen Banken abgenommen werden. Details: [Funktionsstand](docs/PARITY.md).
 
 ## Installation
 
@@ -32,7 +32,7 @@ GitHub Actions baut bei Push und Pull Requests ohne Live-Schlüssel. Ein manuell
 
 ## Beta-Prüfung
 
-71 lokale Selbsttests, Tray-Lebenszyklus und Demo-Start des Entwicklungsstands wurden erfolgreich geprüft. Bestehende Installation und Tresor-Erhalt wurden lokal geprüft. Eine saubere Erstinstallation auf einem weiteren Rechner, vollständige Bankmatrix, persönliche Windows-Hello-Anmeldung und echte Zahlungen sind noch nicht abgenommen.
+109 lokale Selbsttests, Tray-Lebenszyklus und Demo-Start des Entwicklungsstands wurden erfolgreich geprüft. Bestehende Installation und Tresor-Erhalt wurden lokal geprüft. Eine saubere Erstinstallation auf einem weiteren Rechner, vollständige Bankmatrix, persönliche Windows-Hello-Anmeldung und echte Zahlungen sind noch nicht abgenommen.
 
 Der Reparaturtest des MSI aus dem Projektordner war erfolgreich. Die EXE-Reparatur aus der paketierten Codex-Umgebung scheiterte an deren AppData-Umleitung; die Wiederholung aus dem normalen Explorer-Kontext steht aus.
 

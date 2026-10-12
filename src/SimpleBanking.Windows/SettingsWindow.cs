@@ -9,6 +9,7 @@ internal sealed class AppPreferences
     public Dictionary<string,string>? CustomTheme {get;set;}
     public Dictionary<string,byte[]>? CustomThemeImages {get;set;}
     public bool DarkAppearance {get;set;}
+    public bool BtxCrtEnabled {get;set;}
     public bool WidgetEnabled {get;set;}
     public int WidgetX {get;set;}=80;
     public int WidgetY {get;set;}=80;
@@ -90,7 +91,7 @@ internal sealed partial class SettingsWindow : Form
     }
     void Toggle(string text,bool value,Action<bool> changed,string? subtitle=null,string? icon=null,string[]? keys=null) {
         var row=new TableLayoutPanel {AutoSize=true,ColumnCount=4,RowCount=1,Margin=new Padding(0,0,0,8),Padding=new Padding(16),MinimumSize=new Size(0,64),BackColor=Color.FromArgb(251,251,251)};
-        row.Paint+=(_,e)=>{e.Graphics.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using var path=ExportDesign.Round(new RectangleF(.5f,.5f,row.Width-1,row.Height-1),6);using var pen=new Pen(Color.FromArgb(229,229,229));e.Graphics.DrawPath(pen,path);};
+        row.Paint+=(_,e)=>{e.Graphics.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using var path=ExportDesign.Round(new RectangleF(.5f,.5f,row.Width-1,row.Height-1),ThemeStyling.Current.SquareControls?0:6);using var pen=new Pen(ThemePalette.Blend(ThemeStyling.Current.Ink,ThemeStyling.Current.Surface,.18));e.Graphics.DrawPath(pen,path);};
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,icon==null?0:36));row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,keys==null?0:150));row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,88));
         if(icon!=null){var image=ExportDesign.Icon(icon);var picture=new PictureBox{Image=image,SizeMode=PictureBoxSizeMode.CenterImage,Size=new Size(24,28),Anchor=AnchorStyles.Left,Margin=Padding.Empty};picture.Disposed+=(_,_)=>image?.Dispose();row.Controls.Add(picture,0,0);}
         var labels=new FlowLayoutPanel {AutoSize=true,Anchor=AnchorStyles.Left|AnchorStyles.Right,FlowDirection=FlowDirection.TopDown,WrapContents=false,Margin=Padding.Empty};
@@ -179,10 +180,11 @@ internal sealed partial class SettingsWindow : Form
                 break;
             case 3:
                 TextLine("Darstellung",true);var themes=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,DisplayMember="Value",ValueMember="Key"};var choices=ThemePalette.BuiltIns.Select(p=>new KeyValuePair<string,string>(p.Key,p.Value["name"])).ToList();if(prefs.CustomTheme is {} custom)choices.Add(new("custom",custom.GetValueOrDefault("name")??"Importiertes Theme"));themes.Items.AddRange(choices.Cast<object>().ToArray());themes.SelectedIndex=Math.Max(0,choices.FindIndex(c=>c.Key==prefs.ThemeId));themes.SelectionChangeCommitted+=(_,_)=>{if(themes.SelectedItem is KeyValuePair<string,string> choice){prefs.ThemeId=choice.Key;Save();}};body.Controls.Add(themes);ThemeTools();
-                Toggle("Dunkle Kontenansicht",prefs.DarkAppearance,v=>prefs.DarkAppearance=v,"Gilt für Umsatzliste und Flyout. Die Einstellungen bleiben in der Windows-Darstellung.");
+                Toggle("Dunkle Darstellung",prefs.DarkAppearance,v=>prefs.DarkAppearance=v,"Gilt für Konten, Auswertungen, Einstellungen und Dialoge.");
                 Toggle("Händlerlogos aus dem Internet",prefs.RemoteMerchantLogos,v=>prefs.RemoteMerchantLogos=v,"Bekannte Händlerdomains an Logo.dev senden. Lokale Logos zuerst; 30 Tage Cache, höchstens drei neue Abrufe pro Tag wie auf dem Mac.");
                 TextLine("Kontostand-Anzeige", true);
-                Toggle("Kontoring anzeigen",prefs.MonthRingEnabled,v=>prefs.MonthRingEnabled=v);
+                if(owner.Theme.HasRingImage)TextLine("Das Theme verwendet ein eigenes Ringbild.");
+                else Toggle("Kontoring anzeigen",prefs.MonthRingEnabled,v=>prefs.MonthRingEnabled=v);
                 Toggle("Ripple bei jedem Öffnen", prefs.RippleAlwaysOn, v => prefs.RippleAlwaysOn = v);
                 Toggle("„Vorgemerkt“ als Pille anzeigen", prefs.PendingAsPill, v => prefs.PendingAsPill = v,"Markiert vorgemerkte Buchungen mit einer eigenen Kapsel. Aus: Die Zeile bleibt gedimmt, aber ohne Kapsel.");
                 Toggle("Kategorien anzeigen", prefs.ShowCategories, v => prefs.ShowCategories = v);
@@ -197,7 +199,7 @@ internal sealed partial class SettingsWindow : Form
                 TextLine("App-Passwort", true); Action("Passwort ändern …",()=>{owner.ChangeMasterPassword();if(!IsDisposed)ShowTab(4);}); Action("Sperren", owner.Lock); Action("Entsperren", owner.UnlockFromSettings);
                 TextLine("Sicherung", true); Action("Sicherung erstellen …", owner.BackupFromSettings); break;
             case 5:
-                TextLine("simplesend", true); Action("Lizenz aktivieren …",owner.ActivateSimpleSend); Action("Zahlungsjournal",owner.OpenPayments);Action("Vorlagen",owner.OpenPaymentTemplates);TextLine("CLI / MCP",true);Toggle("Lokalen Lesezugriff erlauben",prefs.AutomationEnabled,v=>prefs.AutomationEnabled=v,"Konten und Umsätze für lokale Programme desselben Windows-Benutzers freigeben. Nur bei entsperrter App; keine Zahlungen und keine Bank-Zugangsdaten.");break;
+                TextLine("Erinnerungen",true);Action("Microsoft To Do …",owner.OpenTodoSettings);TextLine("simplesend", true); Action("Lizenz aktivieren …",owner.ActivateSimpleSend); Action("Zahlungsjournal",owner.OpenPayments);Action("Vorlagen",owner.OpenPaymentTemplates);TextLine("CLI / MCP",true);Toggle("CLI / MCP aktivieren",prefs.AutomationEnabled,v=>prefs.AutomationEnabled=v,"Zugriff nur mit Client-Token und individuellen Berechtigungen bei entsperrter App. Überweisungsentwürfe benötigen eine Freigabe in simplebanking.");Action("Clients verwalten …",owner.ManageAutomationClients);Action("MCP-Entwürfe prüfen …",owner.ReviewAutomationDrafts);break;
             case 6:
                 BuildAiSettings(); break;
             case 7: BuildAbout();break;

@@ -13,5 +13,13 @@
     "sha256": "512148E158CCEA0E39ADC6915C2BD90E6EC58E88006B3CED916154FFD2C0804E"
   },
   "dotnet": "10.0.401",
-  "architecture": "win-x64"
+  "architecture": "win-x64",
+  "macReview": {
+    "report": "MAC-SYNC-2026-10.md",
+    "windowsVersion": "0.17.0",
+    "base": "933e158b0e0d87558943eeef21c97feea3e1423a",
+    "commits": 23,
+    "head": "9be7a2505e773c3aef138881c8a29822be0fe187",
+    "date": "2026-10-12"
+  }
 }

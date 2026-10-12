@@ -77,7 +77,7 @@ public sealed class YaxiClient : IDisposable
 }
 
 public sealed record YaxiSettings(bool Integration = true);
-public sealed record BankConnection(string Id, string ProviderId, string Name, string UserId, string Password, int[]? ConnectionData = null,DateTimeOffset? ConnectionDataUpdatedAt=null);
+public sealed record BankConnection(string Id, string ProviderId, string Name, string UserId, string Password, int[]? ConnectionData = null,DateTimeOffset? ConnectionDataUpdatedAt=null,bool ApprovalRequired=false);
 
 public sealed class TicketClient : IDisposable
 {
@@ -148,7 +148,7 @@ public sealed class BankFlow(YaxiClient client)
 {
     // The UI must explicitly handle every confirmation, including VoP and account selection.
     public async Task<JsonObject> RunAsync(JsonObject start, string service,
-        Func<JsonObject, Task<BankReply>> prompt, CancellationToken cancellation)
+        Func<JsonObject, Task<BankReply>> prompt, CancellationToken cancellation, bool allowInteractive = true)
     {
         var ticket = start["ticket"]?.GetValue<string>() ?? throw new ArgumentException("Ticket missing");
         var result = await client.CallAsync(start, cancellation);
@@ -163,6 +163,7 @@ public sealed class BankFlow(YaxiClient client)
                 return result;
             }
             if (kind is not ("dialog" or "redirect" or "redirectHandle")) throw new YaxiException("Protocol", "Unbekannte Bankantwort.");
+            BankReadAccess.RequireInteractive(allowInteractive);
             var answer = await prompt(result);
             if (answer.Canceled) throw new OperationCanceledException("Bankfreigabe abgebrochen.");
             var input = result["input"];

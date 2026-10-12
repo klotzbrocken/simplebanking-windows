@@ -10,11 +10,15 @@ public sealed record Account(string Id, string Name, string Iban, string Currenc
 public sealed record Entry(string Id, string AccountId, DateOnly Date, decimal Amount, string Currency,
     string Merchant, string Purpose, string Category, bool Pending = false, bool Read = false, bool Flagged = false, string Note = "",
     DateOnly? ValueDate = null, string CounterpartyIban = "", string CounterpartyBic = "", string AdditionalInformation = "", string PurposeCode = "", string? BankCounterpartyName = null, string EndToEndId = "", bool CategoryManual = false,
-    List<BookingAttachment>? Attachments = null, DateTime? ReminderAt = null, bool ReminderDone = false, string? OriginalMerchant = null, byte[]? CustomLogo = null, string? MerchantOverride = null, [property: System.Text.Json.Serialization.JsonIgnore] byte[]? MerchantLogo = null);
+    List<BookingAttachment>? Attachments = null, DateTime? ReminderAt = null, bool ReminderDone = false, string? OriginalMerchant = null, byte[]? CustomLogo = null, string? MerchantOverride = null, [property: System.Text.Json.Serialization.JsonIgnore] byte[]? MerchantLogo = null,
+    string BankTransactionCode = "", string? MerchantSource = null, double? MerchantConfidence = null, TodoLink? ToDo = null);
 public sealed record BookingAttachment(string Id,string Name,byte[] Content);
 public sealed record TransferDraft(string AccountId, string Name, string Iban, decimal Amount, string Purpose, DateOnly? Date = null, string? RoundupId = null);
 public sealed class BankData
 {
+    public TodoConnection ToDo {get;set;}=new();
+    public List<AutomationClient> AutomationClients {get;set;}=[];
+    public List<AutomationDraft> AutomationDrafts {get;set;}=[];
     public AiConfiguration Ai {get;set;}=new();
     public Dictionary<string,DateOnly> AttentionReadUntil {get;set;} = new();
     public Dictionary<string,byte[]> MerchantLogos {get;set;} = new();
@@ -82,6 +86,15 @@ public static class BankingRules
 // Independently encrypted data roots for demo and real use. Product API keys are build resources.
 public sealed class EncryptedStore(string root)
 {
+    // Omit only optional Entry constructor defaults. Older readers reconstruct the same
+    // defaults; required fields and non-default enrichment values stay in the v1 format.
+    static readonly JsonSerializerOptions CompactJson=CreateCompactJson();
+    static JsonSerializerOptions CreateCompactJson(){
+        var resolver=new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver();
+        var defaults=typeof(Entry).GetConstructors().Single().GetParameters().Where(p=>p.HasDefaultValue).ToDictionary(p=>p.Name!,p=>p.DefaultValue,StringComparer.OrdinalIgnoreCase);
+        resolver.Modifiers.Add(type=>{if(type.Type==typeof(Entry))foreach(var property in type.Properties)if(defaults.TryGetValue(property.Name,out var value))property.ShouldSerialize=(_,actual)=>!Equals(actual,value);});
+        return new(){TypeInfoResolver=resolver,DefaultIgnoreCondition=System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull};
+    }
     private const int Iterations = 600_000;
     private static readonly byte[] Aad = "simplebanking-windows-v1"u8.ToArray();
     public string Root { get; } = Path.GetFullPath(root);
@@ -92,12 +105,14 @@ public sealed class EncryptedStore(string root)
     {
         var salt = RandomNumberGenerator.GetBytes(16);
         var nonce = RandomNumberGenerator.GetBytes(12);
+        var plain = JsonSerializer.SerializeToUtf8Bytes(data,CompactJson);
         var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA256, 32);
-        var plain = JsonSerializer.SerializeToUtf8Bytes(data);
         var cipher = new byte[plain.Length]; var tag = new byte[16];
         try { using var aes = new AesGcm(key, 16); aes.Encrypt(nonce, plain, cipher, tag, Aad); }
         finally { CryptographicOperations.ZeroMemory(key); CryptographicOperations.ZeroMemory(plain); }
-        return JsonSerializer.SerializeToUtf8Bytes(new Envelope(1, Iterations, salt, nonce, tag, cipher));
+        var bytes=JsonSerializer.SerializeToUtf8Bytes(new Envelope(1, Iterations, salt, nonce, tag, cipher));
+        if(bytes.Length>64*1024*1024)throw new InvalidDataException("Die verschlüsselte Sicherung überschreitet 64 MB. Es wurden keine Daten ausgelassen.");
+        return bytes;
     }
     public static BankData Decrypt(byte[] bytes, string password)
     {
@@ -119,6 +134,14 @@ public sealed class EncryptedStore(string root)
         finally { CryptographicOperations.ZeroMemory(key); CryptographicOperations.ZeroMemory(plain); }
     }
     public BankData Load(string password) => Decrypt(File.ReadAllBytes(FilePath), password);
+    public static void WriteBackup(string path,BankData data,string password) {
+        var bytes=Encrypt(data,password);
+        var full=Path.GetFullPath(path);var temporary=full+"."+Guid.NewGuid().ToString("N")+".tmp";
+        try {
+            using(var stream=new FileStream(temporary,FileMode.CreateNew,FileAccess.Write,FileShare.None)){stream.Write(bytes);stream.Flush(true);}
+            File.Move(temporary,full,true);
+        }finally{if(File.Exists(temporary))File.Delete(temporary);}
+    }
     public void Save(BankData data, string password)
     {
         Directory.CreateDirectory(Root);

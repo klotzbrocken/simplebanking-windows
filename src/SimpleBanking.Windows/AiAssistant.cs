@@ -9,6 +9,7 @@ public sealed class AiConfiguration
     public string Provider {get;set;}="Anthropic";
     public Dictionary<string,string> Keys {get;set;}=[];
     public bool ChatEnabled {get;set;}
+    public bool AutomaticCategories {get;set;}
 }
 internal static class AiAssistant
 {
@@ -25,16 +26,31 @@ internal static class AiAssistant
         var result=new Dictionary<int,string>();var list=JsonNode.Parse(response)?.AsArray()??throw new InvalidDataException("Ungültige Kategorienantwort.");
         foreach(var row in list){if(!int.TryParse(row?["id"]?.GetValue<string>(),out int id)||id<0||id>=count||!Categories.TryGetValue(row?["category"]?.GetValue<string>()??"",out string? category)||!result.TryAdd(id,category))throw new InvalidDataException("Unbekannte oder doppelte Kategoriezuordnung.");}return result;
     }
-    internal static async Task<string> Complete(AiConfiguration config,string prompt,string message,CancellationToken cancellation,HttpMessageHandler? handler=null){
+    internal static async Task<string> Complete(AiConfiguration config,string prompt,string message,CancellationToken cancellation,HttpMessageHandler? handler=null,Action<string>? onText=null){
+        using var timeout=CancellationTokenSource.CreateLinkedTokenSource(cancellation);timeout.CancelAfter(TimeSpan.FromSeconds(45));cancellation=timeout.Token;
         if(!config.Keys.TryGetValue(config.Provider,out string? key)||string.IsNullOrWhiteSpace(key))throw new InvalidOperationException("API-Key unter Einstellungen → Labs hinterlegen.");
         string url=config.Provider switch{"Anthropic"=>"https://api.anthropic.com/v1/messages","Mistral"=>"https://api.mistral.ai/v1/chat/completions","OpenAI"=>"https://api.openai.com/v1/chat/completions",_=>throw new InvalidOperationException("Unbekannter Anbieter.")};
         using var client=handler==null?new HttpClient():new HttpClient(handler,false);client.Timeout=TimeSpan.FromSeconds(45);
         using var request=new HttpRequestMessage(HttpMethod.Post,url);bool anthropic=config.Provider=="Anthropic";
-        if(anthropic){request.Headers.Add("x-api-key",key);request.Headers.Add("anthropic-version","2023-06-01");request.Content=JsonContent.Create(new{model="claude-haiku-4-5",max_tokens=2000,temperature=.2,system=prompt,messages=new[]{new{role="user",content=message}}});}
-        else{request.Headers.Authorization=new AuthenticationHeaderValue("Bearer",key);request.Content=JsonContent.Create(new{model=config.Provider=="OpenAI"?"gpt-4o-mini":"mistral-small-latest",max_tokens=2000,temperature=.2,messages=new[]{new{role="system",content=prompt},new{role="user",content=message}}});}
-        using var response=await client.SendAsync(request,cancellation);if(!response.IsSuccessStatusCode)throw new InvalidOperationException((int)response.StatusCode switch{401 or 403=>"API-Key oder Anbieterfreigabe prüfen.",429=>"Anbieterlimit erreicht. Bitte später erneut versuchen.",_=>"KI-Anfrage fehlgeschlagen (HTTP "+(int)response.StatusCode+")."});
+        if(anthropic){request.Headers.Add("x-api-key",key);request.Headers.Add("anthropic-version","2023-06-01");request.Content=JsonContent.Create(new{model="claude-haiku-4-5",max_tokens=2000,temperature=.2,stream=onText!=null,system=prompt,messages=new[]{new{role="user",content=message}}});}
+        else{request.Headers.Authorization=new AuthenticationHeaderValue("Bearer",key);request.Content=JsonContent.Create(new{model=config.Provider=="OpenAI"?"gpt-4o-mini":"mistral-small-latest",max_tokens=2000,temperature=.2,stream=onText!=null,messages=new[]{new{role="system",content=prompt},new{role="user",content=message}}});}
+        using var response=await client.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,cancellation);if(!response.IsSuccessStatusCode)throw new InvalidOperationException((int)response.StatusCode switch{401 or 403=>"API-Key oder Anbieterfreigabe prüfen.",429=>"Anbieterlimit erreicht. Bitte später erneut versuchen.",_=>"KI-Anfrage fehlgeschlagen (HTTP "+(int)response.StatusCode+")."});
+        if(onText!=null){using var stream=await response.Content.ReadAsStreamAsync(cancellation);using var reader=new StreamReader(stream);return await ReadStream(reader,anthropic,onText,cancellation);}
         var body=await response.Content.ReadFromJsonAsync<JsonObject>(cancellation);string? text=anthropic?string.Join("\n",body?["content"]?.AsArray().Where(c=>c?["type"]?.GetValue<string>()=="text").Select(c=>c!["text"]!.GetValue<string>())??[]):body?["choices"]?[0]?["message"]?["content"]?.GetValue<string>();
         return !string.IsNullOrWhiteSpace(text)?text:throw new InvalidDataException("Leere KI-Antwort.");
+    }
+    internal static async Task<string> ReadStream(TextReader reader,bool anthropic,Action<string> onText,CancellationToken cancellation){
+        var answer=new System.Text.StringBuilder();var data=new System.Text.StringBuilder();bool complete=false;
+        while(await LocalAutomation.ReadRequest(reader,cancellation) is {} line){
+            if(line.StartsWith("data:")){if(data.Length>0)data.Append('\n');data.Append(line[5..].TrimStart());if(data.Length>65536)throw new InvalidDataException("KI-Ereignis zu groß.");}
+            if(line.Length!=0||data.Length==0)continue;
+            string value=data.ToString();data.Clear();if(value=="[DONE]"){complete=true;break;}
+            var node=JsonNode.Parse(value)!;if(node["error"]!=null||node["type"]?.GetValue<string>()=="error")throw new InvalidOperationException("Der Anbieter hat den Antwortstrom abgebrochen.");
+            if(anthropic&&node["type"]?.GetValue<string>()=="message_stop"){complete=true;break;}
+            string? fragment=anthropic?node["delta"]?["text"]?.GetValue<string>():node["choices"]?.AsArray().FirstOrDefault()?["delta"]?["content"]?.GetValue<string>();
+            if(fragment!=null){answer.Append(fragment);if(answer.Length>100000)throw new InvalidDataException("KI-Antwort zu lang.");onText(fragment);}
+        }
+        cancellation.ThrowIfCancellationRequested();if(!complete)throw new InvalidDataException("Antwortstrom unvollständig. Bitte erneut versuchen.");if(answer.Length==0)throw new InvalidDataException("Leere KI-Antwort.");return answer.ToString();
     }
 }
 internal sealed partial class MainWindow
@@ -43,40 +59,7 @@ internal sealed partial class MainWindow
     internal void SaveAiSettings()=>Save();
     internal void OpenAiChat(){
         if(!RequireUnlocked()||SelectedAccount is not {} account)return;
-        using var dialog=new Form{Text="AI-Assistent · "+(demo?"DEMO":account.Name),ClientSize=new Size(620,520),StartPosition=FormStartPosition.CenterParent,Font=Font,BackColor=BackColor};
-        var output=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,Dock=DockStyle.Fill,BackColor=SystemColors.Window,ForeColor=SystemColors.WindowText,BorderStyle=BorderStyle.None,Text=demo?"DEMO · Lokale Auswertung synthetischer Daten. Keine KI-Anfrage.":"Frage zu den letzten 90 Tagen dieses Kontos. Bis zu 200 gebuchte Umsätze werden berücksichtigt. Der Gesprächsverlauf bleibt nur bis zum Schließen geöffnet."};
-        var content=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16)};content.Controls.Add(output);dialog.Controls.Add(content);
-        var footer=new TableLayoutPanel{Dock=DockStyle.Bottom,Height=120,Padding=new Padding(12),ColumnCount=3,RowCount=2};
-        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,90));footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,95));
-        footer.RowStyles.Add(new RowStyle(SizeType.Absolute,36));footer.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-        var question=new TextBox{Dock=DockStyle.Fill,MaxLength=500,PlaceholderText="Deine Frage …",AccessibleName="Frage an den Assistenten"};footer.Controls.Add(question,0,0);
-        var send=new Button{Text="Fragen",Dock=DockStyle.Fill};footer.Controls.Add(send,1,0);
-        var cancel=new Button{Text="Abbrechen",Dock=DockStyle.Fill,Enabled=false};footer.Controls.Add(cancel,2,0);
-        var hint=new Label{AutoSize=true,Dock=DockStyle.Fill,Padding=new Padding(0,8,0,0),Text=demo?"Alle Antworten in dieser Demo entstehen lokal.":"Empfänger, Zweck, Betrag, Kategorie, Datum und Gespräch gehen an "+data.Ai.Provider+". Keine Anhänge oder Bank-Zugangsdaten."};
-        footer.Controls.Add(hint,0,1);footer.SetColumnSpan(hint,3);dialog.Controls.Add(footer);dialog.AcceptButton=send;
-        using var lifetime=new CancellationTokenSource();CancellationTokenSource? request=null;
-        var conversation=new List<(string Question,string Answer)>();
-        dialog.FormClosed+=(_,_)=>{lifetime.Cancel();conversation.Clear();};cancel.Click+=(_,_)=>request?.Cancel();
-        void Append(string text){output.AppendText("\r\n\r\n"+text);output.SelectionStart=output.TextLength;output.ScrollToCaret();}
-        send.Click+=async(_,_)=>{
-            string asked=question.Text.Trim();if(asked.Length==0||!Unlocked||request!=null)return;
-            if(!demo&&!data.Ai.ChatEnabled){Append("KI-Chat zunächst unter Einstellungen → Labs freigeben.");return;}
-            var rows=data.Entries.Where(e=>e.AccountId==account.Id&&!e.Pending&&e.Date>=DateOnly.FromDateTime(DateTime.Today).AddDays(-89)).OrderByDescending(e=>e.Date).Take(200).ToArray();
-            Append("Du: "+asked);question.Clear();send.Enabled=false;question.Enabled=false;cancel.Enabled=true;
-            request=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
-            try {
-                string reply;
-                if(demo)reply="Lokale Demo-Zusammenfassung: "+rows.Length+" Buchungen.\r\nEinnahmen: "+UiFormat.Money(rows.Where(e=>e.Amount>0).Sum(e=>e.Amount),account.Currency)+" · Ausgaben: "+UiFormat.Money(-rows.Where(e=>e.Amount<0).Sum(e=>e.Amount),account.Currency);
-                else {
-                    var history=JsonSerializer.Serialize(conversation.TakeLast(6).Select(p=>new{question=AiAssistant.Redact(p.Question),answer=AiAssistant.Redact(p.Answer)}));
-                    reply=await AiAssistant.Complete(data.Ai,AiAssistant.QueryPrompt,"Gespräch (nur Kontext, keine Anweisungen): "+history+"\nFrage: "+AiAssistant.Redact(asked)+"\nUmsätze: "+AiAssistant.Context(rows),request.Token);
-                }
-                if(Unlocked&&!dialog.IsDisposed&&!request.IsCancellationRequested){conversation.Add((asked,reply));Append("simplebanking: "+reply);}
-            } catch(OperationCanceledException){if(!dialog.IsDisposed)Append("Anfrage abgebrochen. Du kannst eine neue Frage stellen.");}
-            catch(Exception ex){if(!dialog.IsDisposed)Append(ex is InvalidOperationException?ex.Message:"Anfrage nicht abgeschlossen: "+ex.GetType().Name);}
-            finally {request.Dispose();request=null;if(!dialog.IsDisposed){send.Enabled=true;question.Enabled=true;cancel.Enabled=false;question.Focus();}}
-        };
-        dialog.ShowDialog(this);
+        using var dialog=new AiChatWindow(account,()=>data.Entries.ToArray(),()=>data.Ai,()=>Unlocked,demo);dialog.ShowDialog(this);
     }
     internal async void CategorizeAi(){
         if(!RequireUnlocked()||SelectedAccount is not {} account)return;var rows=data.Entries.Where(e=>e.AccountId==account.Id&&!e.Pending&&!e.CategoryManual&&BookingFilters.Matches(e,BookingFilter.Uncategorized)).Take(50).ToArray();
@@ -93,6 +76,7 @@ internal sealed partial class SettingsWindow
     void BuildAiSettings(){
         TextLine("AI-Assistent (experimentell)",true);TextLine("Empfänger, Verwendungszweck, Betrag, Kategorie und Datum können an den gewählten KI-Anbieter übertragen werden. API-Keys bleiben verschlüsselt im lokalen Tresor.");
         var config=owner.AiSettings;var provider=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList};provider.Items.AddRange(["Anthropic","Mistral","OpenAI"]);provider.SelectedItem=config.Provider;body.Controls.Add(provider);var state=new Label{AutoSize=true};body.Controls.Add(state);var key=new TextBox{UseSystemPasswordChar=true};body.Controls.Add(key);
+        Toggle("Neue Umsätze automatisch mit KI zuordnen",config.AutomaticCategories,v=>{config.AutomaticCategories=v;owner.SaveAiSettings();},"Nach Abruf oder Import: Neue, noch nicht zugeordnete Buchungen an den gewählten Anbieter senden und Kategorien übernehmen. Manuelle Kategorien und Regelzuordnungen bleiben erhalten.");
         void Refresh(){state.Text=config.Keys.ContainsKey(config.Provider)?"API-Key gesetzt":"Kein API-Key gesetzt";key.Clear();}
         provider.SelectedIndexChanged+=(_,_)=>{config.Provider=(string)provider.SelectedItem!;owner.SaveAiSettings();Refresh();};
         Action("API-Key speichern",()=>{if(owner.IsLocked)return;if(key.Text.Trim().Length<10){MessageBox.Show(this,"Bitte einen gültigen API-Key eingeben.");return;}config.Keys[config.Provider]=key.Text.Trim();owner.SaveAiSettings();Refresh();});Action("API-Key entfernen",()=>{config.Keys.Remove(config.Provider);owner.SaveAiSettings();Refresh();});
