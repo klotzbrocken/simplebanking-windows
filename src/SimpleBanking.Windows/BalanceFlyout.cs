@@ -87,14 +87,14 @@ internal sealed class BalanceFlyout : Form
     internal void RefreshCards()
     {
         OnSizeChanged(EventArgs.Empty);Padding=owner.Theme.Border.HasValue?new Padding(3):Padding.Empty;
-        var accounts=owner.FlyoutAccounts();BackColor=owner.Theme.Surface;send.Tint=pin.Tint=owner.Theme.Secondary;send.TextMode=pin.TextMode=owner.Theme.Lofi;
+        var accounts=owner.FlyoutAccounts();BackColor=owner.Theme.Surface;send.Tint=pin.Tint=owner.Theme.Secondary;send.TextMode=pin.TextMode=!owner.Theme.GlyphControls;
         slots.UpdateAccounts(accounts,owner.SelectedAccountIndex,owner.AllAccountsSelected,BalancePresentation.Create(owner.CurrentBalance,owner.Preferences),owner.Theme.BankLogos);
         float scale=DeviceDpi/96f;
         if(owner.QuickSendAccountId==null&&quickSend!=null){quickSend.Dispose();quickSend=null;}
         int oldBottom=Bottom;Height=(int)((178+(quickSend?.PreferredHeight??0))*scale);if(Visible&&!IsPinned)Top=Math.Max(Screen.FromPoint(Location).WorkingArea.Top,oldBottom-Height);if(quickSend!=null){quickSend.SetBounds(0,(int)(178*scale),ClientSize.Width,(int)(quickSend.PreferredHeight*scale));quickSend.RefreshAccount();}slots.Visible=accounts.Count>1;
         slots.SetBounds((int)(12*scale),(int)(140*scale),ClientSize.Width-(int)((IsPinned?126:96)*scale),(int)(38*scale));
         send.SetBounds(ClientSize.Width-(int)(40*scale),(int)(143*scale),(int)(28*scale),(int)(28*scale));send.Enabled=!owner.IsLocked;pin.SetBounds(ClientSize.Width-(int)(74*scale),(int)(143*scale),(int)(28*scale),(int)(28*scale));
-        closeWidget.Tint=owner.Theme.Secondary;closeWidget.TextMode=owner.Theme.Lofi;
+        closeWidget.Tint=owner.Theme.Secondary;closeWidget.TextMode=!owner.Theme.GlyphControls;
         closeWidget.SetBounds(ClientSize.Width-(int)(106*scale),(int)(143*scale),(int)(28*scale),(int)(28*scale));closeWidget.Visible=IsPinned;closeWidget.Enabled=quickSend?.Busy!=true;
         card.Height=(int)(140*scale);card.RefreshCard();
     }

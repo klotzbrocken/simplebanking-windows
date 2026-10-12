@@ -83,20 +83,21 @@ internal sealed record Mmi(decimal Income,decimal Expenses,decimal Savings,decim
     internal static Mmi Calculate(IEnumerable<Entry> entries,decimal balance,int period,DateOnly today,IEnumerable<Subscription> subscriptions,bool includeSavings=true) {
         var tagged=subscriptions.Where(s=>s.Tab=="Sparen").SelectMany(s=>s.Entries).Select(e=>e.AccountId+"/"+e.Id).ToHashSet();
         var cutoff=period==0?today.AddMonths(-1):period==1?today.AddMonths(-3):new DateOnly(today.Year,1,1);
-        var rows=entries.Where(e=>e.Date>=cutoff).ToList();bool Tagged(Entry e)=>tagged.Contains(e.AccountId+"/"+e.Id);
+        var rows=entries.Where(e=>!e.Pending&&e.Date>=cutoff&&e.Date<=today).ToList();bool Tagged(Entry e)=>tagged.Contains(e.AccountId+"/"+e.Id);
         return new(rows.Where(e=>Kind(e)=="income").Sum(e=>e.Amount),rows.Where(e=>Kind(e)=="expense"&&!Tagged(e)).Sum(e=>Math.Abs(e.Amount)),includeSavings?rows.Where(e=>Kind(e)=="savings"||(Kind(e)=="expense"&&Tagged(e))).Sum(e=>Math.Abs(e.Amount)):0,balance,period==0?1:period==1?3:today.Month);
     }
 }
-internal sealed record MoneyAgeResult(double? Days,int Samples,int Total,int Uncovered,double? Previous) {
+internal sealed record MoneyAgeResult(double? Days,int Samples,int Total,int Uncovered,double? Previous,double? Minimum=null,double? Maximum=null) {
+    internal string Band=>Days is not {} d?"Noch keine Daten":d<15?"Eingang zu Ausgang":d<30?"Solide, aber eng":d<60?"Du hast Puffer":"Du lebst einen Monat voraus";
     internal static MoneyAgeResult Calculate(IEnumerable<Entry> entries,int size=10) {
         var funds=new LinkedList<(DateOnly Date,decimal Amount)>();var ages=new List<double>();int total=0,uncovered=0;
-        foreach(var e in entries.OrderBy(e=>e.Date)) {
+        foreach(var e in entries.Where(e=>!e.Pending).OrderBy(e=>e.Date)) {
             if(e.Amount>0){funds.AddLast((e.Date,e.Amount));continue;}if(e.Amount==0)continue;
             total++;decimal remaining=-e.Amount,weighted=0,consumed=0;
             while(remaining>0&&funds.First is {} first){decimal take=Math.Min(first.Value.Amount,remaining);weighted+=take*Math.Max(0,e.Date.DayNumber-first.Value.Date.DayNumber);consumed+=take;remaining-=take;if(take==first.Value.Amount)funds.RemoveFirst();else first.Value=(first.Value.Date,first.Value.Amount-take);}
             if(consumed>0)ages.Add((double)(weighted/consumed));if(remaining>0)uncovered++;
         }
         var window=ages.TakeLast(Math.Max(1,size)).ToArray();var previous=ages.Take(ages.Count-window.Length).TakeLast(Math.Max(1,size)).ToArray();
-        return new(window.Length>0?window.Average():null,window.Length,total,uncovered,previous.Length>0?previous.Average():null);
+        return new(window.Length>0?window.Average():null,window.Length,total,uncovered,previous.Length>0?previous.Average():null,window.Length>0?window.Min():null,window.Length>0?window.Max():null);
     }
 }

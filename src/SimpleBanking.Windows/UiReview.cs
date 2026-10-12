@@ -5,7 +5,7 @@ internal static class UiReview
     {
         Directory.CreateDirectory(folder);
         void Capture(Form form, string name) {
-            form.Show(); form.PerformLayout(); Application.DoEvents();
+            form.Show(); if(form is not ThemePreview)ThemeStyling.Apply(form);form.PerformLayout(); Application.DoEvents();
             foreach(var card in Descendants(form).OfType<BalanceCard>())card.StopRipple();
             using var bitmap = new Bitmap(form.Width, form.Height);
             form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, form.Size));
@@ -197,7 +197,7 @@ internal static class UiReview
         foreach(string themeId in new[]{"sunrise","gameboy","btx"}){main.Preferences.ThemeId=themeId;main.ApplyPreferences();Capture(main,"theme-"+themeId);flyout.RefreshCards();Capture(flyout,"theme-flyout-"+themeId);if(themeId=="btx"){flyout.Show();Descendants(flyout).OfType<BalanceCard>().Single().StartRipple();if(Descendants(flyout).OfType<BalanceCard>().Single().RippleRunning)throw new InvalidOperationException("BTX started a disabled ripple.");flyout.Hide();}}
         main.Preferences.ThemeId="default";main.Preferences.DarkAppearance=true;main.ApplyPreferences();Capture(main,"theme-dark");main.Preferences.DarkAppearance=false;main.ApplyPreferences();
         using(var dashboard=new DashboardWindow(main)) {
-            for(int tab=0;tab<5;tab++){dashboard.ShowTab(tab);Capture(dashboard,"dashboard-"+tab);}dashboard.ShowSubscriptionMode("Statistik");Capture(dashboard,"subscriptions-statistics");dashboard.ShowSubscriptionMode("Kalender");Capture(dashboard,"subscriptions-calendar");
+            for(int tab=0;tab<6;tab++){dashboard.ShowTab(tab);Capture(dashboard,"dashboard-"+tab);}dashboard.ShowSubscriptionMode("Statistik");Capture(dashboard,"subscriptions-statistics");dashboard.ShowSubscriptionMode("Kalender");Capture(dashboard,"subscriptions-calendar");
         }
         using(var assistant=new RuleAssistant(main,main.AnalysisSnapshot()))Capture(assistant,"rule-assistant");
         void Modal(Action open,string title,string filename){using var timer=new System.Windows.Forms.Timer{Interval=100};bool captured=false;timer.Tick+=(_,_)=>{var form=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text==title);if(form==null)return;timer.Stop();Capture(form,filename);captured=true;form.Close();};timer.Start();open();timer.Stop();if(!captured)throw new InvalidOperationException("Modal review not captured: "+title);}
@@ -261,6 +261,19 @@ internal static class UiReview
             using var themed=new MainWindow(true);themed.Preferences.ThemeId="custom";themed.Preferences.CustomTheme=package.Values;themed.Preferences.CustomThemeImages=package.Images;themed.ApplyPreferences();Capture(themed,"theme-package-transactions");
             themed.Preferences.ThemeId="default";themed.ApplyPreferences();Capture(themed,"theme-package-reset");
         }
+        foreach(var themeId in new[]{"default","btx"}){
+            main.Preferences.ThemeId=themeId;main.Preferences.DarkAppearance=true;main.ApplyPreferences();
+            using var themedSettings=new SettingsWindow(main);themedSettings.ShowReviewTab(3);Capture(themedSettings,"p1-settings-"+themeId);
+            using var themedDashboard=new DashboardWindow(main);themedDashboard.ShowFixedCosts();Capture(themedDashboard,"p1-fixed-"+themeId);themedDashboard.ShowTab(3);Capture(themedDashboard,"p1-age-"+themeId);themedDashboard.ShowTab(0);Capture(themedDashboard,"p1-mmi-"+themeId);
+            using var rules=new RuleAssistant(main,main.AnalysisSnapshot());Capture(rules,"p1-rules-"+themeId);
+            using var themedDetails=new TransactionDetails(DemoData.Create().Entries[0],false,_=>{});Capture(themedDetails,"p1-details-"+themeId);
+        }
+        main.Preferences.ThemeId="btx";main.Preferences.BtxCrtEnabled=true;main.ApplyPreferences();main.Show();ThemeStyling.Refresh();Application.DoEvents();
+        var crt=main.OwnedForms.OfType<BtxCrtOverlay>().Single();if(!crt.Visible)throw new InvalidOperationException("BTX overlay did not open.");
+        main.Hide();Application.DoEvents();if(crt.Visible)throw new InvalidOperationException("BTX overlay remained visible after hiding its owner.");
+        main.Show();Application.DoEvents();if(!crt.Visible)throw new InvalidOperationException("BTX overlay did not follow its owner.");
+        main.Preferences.ThemeId="default";main.Preferences.BtxCrtEnabled=false;main.Preferences.DarkAppearance=false;main.ApplyPreferences();
+        if(!crt.IsDisposed)throw new InvalidOperationException("BTX overlay survived switching themes.");main.Hide();
         return 0;
     }
 }

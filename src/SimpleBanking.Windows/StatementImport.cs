@@ -10,6 +10,13 @@ internal static class StatementImport
     internal static List<Entry> Parse(string content,Account account,bool ofx) => ofx?Ofx(content,account):Camt(content,account);
     static string? Child(XElement element,string name)=>element.Elements().FirstOrDefault(e=>e.Name.LocalName==name)?.Value;
     static XElement? Node(XElement element,string name)=>element.Descendants().FirstOrDefault(e=>e.Name.LocalName==name);
+    static string CamtBankCode(XElement item){
+        var bank=Node(item,"BkTxCd");if(bank==null)return "";var parts=new List<string>();
+        var domain=Node(bank,"Domn");var family=domain==null?null:Node(domain,"Fmly");
+        if(domain!=null&&family!=null)parts.Add("ISO:"+Child(domain,"Cd")+"/"+Child(family,"Cd")+"/"+Child(family,"SubFmlyCd"));
+        var proprietary=Node(bank,"Prtry");if(proprietary!=null){string code=Child(proprietary,"Cd")??"",issuer=Child(proprietary,"Issr")??"";if(code.Length>0)parts.Add((issuer.Equals("DK",StringComparison.OrdinalIgnoreCase)||issuer.Equals("ZKA",StringComparison.OrdinalIgnoreCase)?"GVC:":"OTHER-"+issuer+":")+code);}
+        return string.Join(';',parts);
+    }
     static DateOnly Date(string? text){if(text==null||!DateOnly.TryParse(text.Length>=10?text[..10]:text,CultureInfo.InvariantCulture,out var date))throw new InvalidDataException("Buchungsdatum fehlt oder ist ungültig.");return date;}
     internal static List<Entry> Camt(string content,Account account){
         using var reader=XmlReader.Create(new StringReader(content),new XmlReaderSettings{DtdProcessing=DtdProcessing.Prohibit,XmlResolver=null,MaxCharactersInDocument=30_000_000});
@@ -30,7 +37,7 @@ internal static class StatementImport
                 string memo=string.Join(" ",item.Descendants().Where(e=>e.Name.LocalName=="Ustrd").Select(e=>e.Value));
                 string reference=Node(item,"EndToEndId")?.Value??"";string status=Node(item,"Sts")?.Value??"BOOK";
                 string partyIban=Node(item,value<0?"CdtrAcct":"DbtrAcct") is {} partyAccount?Node(partyAccount,"IBAN")?.Value??"":"";
-                result.Add(new("",account.Id,date,value,currency,name,memo,"Unkategorisiert",Pending:status=="PDNG",ValueDate:valueDate,CounterpartyIban:partyIban,AdditionalInformation:Node(item,"AddtlNtryInf")?.Value??"",PurposeCode:Node(item,"Purp")?.Value??"",BankCounterpartyName:name,EndToEndId:reference=="NOTPROVIDED"?"":reference));
+                result.Add(new("",account.Id,date,value,currency,name,memo,"Unkategorisiert",Pending:status=="PDNG",ValueDate:valueDate,CounterpartyIban:partyIban,AdditionalInformation:Node(item,"AddtlNtryInf")?.Value??"",PurposeCode:Node(item,"Purp")?.Value??"",BankCounterpartyName:name,EndToEndId:reference=="NOTPROVIDED"?"":reference,BankTransactionCode:CamtBankCode(item)));
             }
         }
         if(!doc.Descendants().Any(e=>e.Name.LocalName=="Stmt"))throw new InvalidDataException("Keine CAMT-Kontoauszüge gefunden.");return Identify(result);

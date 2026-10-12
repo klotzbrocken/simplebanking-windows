@@ -10,7 +10,7 @@ internal sealed partial class MainWindow
         MinimumSize=Size.Empty;MaximumSize=Size.Empty;
         ClientSize=new Size(target,ClientSize.Height);MinimumSize=MaximumSize=Size;
         var area=Screen.FromControl(this).WorkingArea;Left=Math.Max(area.Left,Math.Min(center-Width/2,area.Right-Width));
-        RefreshEntries();Invalidate(true);
+        themeWallpaper?.Dispose();themeWallpaper=Theme.Image(ClientSize.Width/(DeviceDpi/96f)>=594?"wallpaperWide":"wallpaper")??Theme.Image("wallpaper");RefreshEntries();Invalidate(true);
     }
     protected override void WndProc(ref Message m){
         if(m.Msg==0x112&&((long)m.WParam&0xfff0)==0xf030){ToggleWindowWidth();return;}

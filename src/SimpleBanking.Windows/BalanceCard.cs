@@ -13,12 +13,13 @@ internal sealed class BalanceCard : Control
     readonly bool flyout;
     readonly Button unlock = new() { Name="UnlockButton", Text="Entsperren", FlatStyle=FlatStyle.Flat, BackColor=Color.White };
     readonly HeaderIcon subtitle;
+    readonly BtxPhone phone;
     readonly System.Windows.Forms.Timer animation = new() { Interval=16 };
     readonly Stopwatch clock = new();
     Bitmap? surface;
     PointF origin;
     internal BalanceCard(MainWindow owner, bool flyout) {
-        this.owner=owner;this.flyout=flyout;Height=140;TabStop=false;
+        this.owner=owner;this.flyout=flyout;phone=new BtxPhone(()=>{if(owner.Theme.Id!="btx")return;owner.Preferences.BtxCrtEnabled=!owner.Preferences.BtxCrtEnabled;owner.Preferences.Save();owner.ApplyPreferences();}){Visible=false};Controls.Add(phone);Height=140;TabStop=false;
         SetStyle(ControlStyles.StandardClick|ControlStyles.StandardDoubleClick|ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw,true);
         subtitle=new HeaderIcon("subtitle","Anzeige unter dem Kontostand wechseln",()=>{
             int mode=flyout?owner.Preferences.FlyoutSubtitleStyle:owner.Preferences.PanelSubtitleStyle;
@@ -45,6 +46,7 @@ internal sealed class BalanceCard : Control
         float scale=DeviceDpi/96f;
         unlock.SetBounds((int)(16*scale),(int)(98*scale),(int)(180*scale),(int)(34*scale));
         subtitle.SetBounds((int)(16*scale),(int)(102*scale),(int)(18*scale),(int)(18*scale));
+        phone.Visible=owner.Theme.Lofi;phone.SetBounds(Width-(int)(30*scale),(int)(14*scale),(int)(24*scale),(int)(24*scale));
         unlock.Visible=owner.IsLocked;unlock.Text=owner.UnlockActionText;
         subtitle.Visible=!owner.IsLocked&&!(owner.BalancesHidden||PrivacyHidden)&&!owner.AllAccountsSelected;
         int mode=flyout?owner.Preferences.FlyoutSubtitleStyle:owner.Preferences.PanelSubtitleStyle;
@@ -75,9 +77,9 @@ internal sealed class BalanceCard : Control
         float width=Width/scale;
         var account=owner.FlyoutAccounts().ElementAtOrDefault(owner.SelectedAccountIndex);
         bool aggregate=owner.AllAccountsSelected;
-        using var logo=theme.Image("logo")??(theme.BankLogos&&!aggregate&&account!=null?BankArtwork.LoadLogo(account,40):null);
+        using var logo=theme.BankLogos?(theme.Image("logo")??(!aggregate&&account!=null?BankArtwork.LoadLogo(account,40):null)):null;
         if(logo!=null)g.DrawImage(logo,16,16,20,20);
-        else if(theme.BankLogos){using var pen=new Pen(presentation.Detail,1.5f);g.DrawRectangle(pen,17,18,18,14);g.DrawRectangle(pen,28,22,8,6);}
+        else if(theme.Lofi)BtxMosaic.Draw(g,new Rectangle(16,16,20,20),"Sonstiges");else if(theme.BankLogos){using var pen=new Pen(presentation.Detail,1.5f);g.DrawRectangle(pen,17,18,18,14);g.DrawRectangle(pen,28,22,8,6);}
         string name=owner.IsLocked?"simplebanking":aggregate?"Alle Konten":account?.Name??"Kontostand";
         string time=!aggregate&&account?.BalanceFetchedAt is {} fetched?" · "+fetched.ToLocalTime().Hour+" Uhr":"";
         using var nameFont=theme.Font(14,true);
@@ -85,16 +87,17 @@ internal sealed class BalanceCard : Control
         using var nameInk=new SolidBrush(theme.Ink);using var detailInk=new SolidBrush(presentation.Detail);
         using var format=new StringFormat {Trimming=StringTrimming.EllipsisCharacter,FormatFlags=StringFormatFlags.NoWrap};
         float timeWidth=g.MeasureString(time,detailFont).Width;
-        float nameWidth=Math.Max(0,Math.Min(g.MeasureString(name,nameFont).Width,width-60-timeWidth));
+        float nameWidth=Math.Max(0,Math.Min(g.MeasureString(name,nameFont).Width,width-(theme.Lofi?88:60)-timeWidth));
         g.DrawString(theme.Text(name),nameFont,nameInk,new RectangleF(44,16,nameWidth,24),format);
         g.DrawString(time,detailFont,detailInk,new RectangleF(44+nameWidth,17,timeWidth,24),format);
         string amount=owner.IsLocked?(owner.NeedsSetup?"Willkommen":"Gesperrt"):(owner.BalancesHidden||PrivacyHidden)?"••••••":owner.CurrentBalance is {} value?UiFormat.Money(value,account?.Currency??"EUR"):"--,-- €";
-        bool ring=owner.Preferences.MonthRingEnabled&&!owner.IsLocked&&!(owner.BalancesHidden||PrivacyHidden)&&!aggregate&&account!=null&&!((account.BankName??account.Name).Contains("paypal",StringComparison.OrdinalIgnoreCase));
+        bool ring=(theme.HasRingImage||(theme.AccountRing&&owner.Preferences.MonthRingEnabled))&&!owner.IsLocked&&!(owner.BalancesHidden||PrivacyHidden)&&!aggregate&&account!=null&&!((account.BankName??account.Name).Contains("paypal",StringComparison.OrdinalIgnoreCase));
         float textWidth=width-32-(ring?84:0);
         float size=38;
         while(size>23){using var candidate=theme.Font(size,true);if(g.MeasureString(amount,candidate).Width<=textWidth)break;size--;}
         using var amountFont=theme.Font(size,true);using var amountInk=new SolidBrush(presentation.Ink);
-        g.DrawString(amount,amountFont,amountInk,new RectangleF(16,44,textWidth,52),format);
+        var amountState=g.Save();if(theme.Lofi){g.TranslateTransform(0,70);g.ScaleTransform(1,1.15f);g.TranslateTransform(0,-70);}
+        g.DrawString(amount,amountFont,amountInk,new RectangleF(16,44,textWidth,52),format);g.Restore(amountState);
         if(!(owner.BalancesHidden||PrivacyHidden)) {
             int mode=flyout?owner.Preferences.FlyoutSubtitleStyle:owner.Preferences.PanelSubtitleStyle;
             if(mode==3&&!owner.CurrentRecurring.BankFee.HasValue)mode=0;

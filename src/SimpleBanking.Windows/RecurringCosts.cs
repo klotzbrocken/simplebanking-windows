@@ -13,7 +13,7 @@ internal static class RecurringCosts
     static Rule[] Load(string name) { using var stream=typeof(RecurringCosts).Assembly.GetManifestResourceStream("SimpleBanking."+name+".json")!;return JsonSerializer.Deserialize<Rule[]>(stream)!; }
     internal static bool WordStart(string text,string marker)=>Regex.IsMatch(text,@"(?<!\p{L})"+Regex.Escape(marker),RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
     static bool Word(string text,string marker)=>Regex.IsMatch(text,@"(?<!\p{L})"+Regex.Escape(marker)+@"(?!\p{L})",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
-    internal static bool StandingOrder(Entry entry)=>new[]{"DAUERAUFTR","STANDING ORDER","DAUERBUCHUNG"}.Any(m=>WordStart(entry.AdditionalInformation,m));
+    internal static bool StandingOrder(Entry entry)=>BankBookingCode.StandingOrder(entry.BankTransactionCode)||new[]{"DAUERAUFTR","STANDING ORDER","DAUERBUCHUNG"}.Any(m=>WordStart(entry.AdditionalInformation,m));
     internal static string CanonicalMerchant(string name)=>IsPaymentProcessor(name)?name:aliasMatchers.FirstOrDefault(a=>a.Match.IsMatch(name)).Rule?.Name??name;
     internal static string Merchant(Entry entry) {
         string name=Regex.Replace(entry.Merchant,@"\s+"," ").Trim(' ','.',',',';','/','|');
@@ -37,7 +37,7 @@ internal static class RecurringCosts
         if(e.Amount>=0)return false;
         var text=(e.Purpose+" "+e.AdditionalInformation).ToLowerInvariant();
         if(new[]{"mahngebühr","mahngebuehr","stornogebühr","stornogebuehr","versandkosten","bearbeitungsgebühr","bearbeitungsgebuehr"}.Any(text.Contains))return false;
-        if(!new[]{"entgeltabrechnung","entgelt","kontoführung","kontofuehrung","kontopreis","grundpreis","buchungsposten","rechnungsabschluss","kontogebühr","kontogebuehr"}.Any(text.Contains))return false;
+        if(!BankBookingCode.Fee(e.BankTransactionCode)&&!new[]{"entgeltabrechnung","entgelt","kontoführung","kontofuehrung","kontopreis","grundpreis","buchungsposten","rechnungsabschluss","kontogebühr","kontogebuehr"}.Any(text.Contains))return false;
         var party=e.BankCounterpartyName??e.Merchant;
         if(string.IsNullOrWhiteSpace(party))return true;
         static IEnumerable<string> Tokens(string t)=>Regex.Matches(t.ToLowerInvariant(),@"\p{L}+").Select(m=>m.Value).Where(t=>t.Length>=4 && t is not ("bank" or "gmbh" or "aktiengesellschaft"));

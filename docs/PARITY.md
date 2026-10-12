@@ -1,4 +1,4 @@
-# Stand der Windows-Portierung — 0.17.0, 12.10.2026
+# Stand der Windows-Portierung — 0.18.0, 12.10.2026
 
 Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md), einschließlich Bankfreigaben, Fixkosten, Banklogos, Sicherungen und lesenden CLI/MCP-Auswertungen. Ursprüngliche Referenz: Mac-Quellcode 2.0.7, Commit 933e158 (vollständige Herkunft unter provenance.json), ursprüngliche Assets und Yaxi SDK 0.2.0. Designreferenz zusätzlich: Desktop/export, insbesondere kombinierte Filter und Passwort-/Hello-Dialog (0.15–0.16, einschließlich Details, Tastenkappen und About-Karten). Diese aktuelle Matrix ersetzt die früheren Fortschrittslisten. **Vollständige Funktions- und Designparität ist nicht erreicht.**
 
@@ -6,12 +6,12 @@ Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md)
 |---|---|---|
 | Windows-App | Selbstständige x64-EXE, Tray/Flyout, Single-Instance-Aktivierung, Benutzer-MSI, Startmenü und Desktop | Signierung, Updater, saubere zweite Testmaschine |
 | Einrichten / Entsperren | Assistent, Masterpasswort, Banksuche, Zugang, Kontenauswahl; automatisches Hello-Entsperren mit Passwort-Fallback, Einrichten/Deaktivieren; getestetes Sperren | Live-Bank-/TAN-Abnahme, persönliche Hello-PIN-/Biometrie-Abnahme; nicht jedes Mac-Detail visuell identisch |
-| Darstellung | Original-Bank-/Händlerassets plus bekannte Remote-Händlerlogos mit Cache, gemeinsame Balance-Karte, MoneyMood-Verläufe, Ripple, acht Einstellungsbereiche mit farbiger Seitenleiste, Footer-Iconbar, ziehbares/persistentes Widget, vier Original-Themepaletten, PNG/ZIP-Themes mit Vorschau und dunkle Kontenansicht | SVG/PDF-Themegrafiken, externe Schriften, vollständige BTX-Spezialansichten und anwendungsweite Themes, vollständige Typografie/Animationen/DPI-Abnahme |
+| Darstellung | Original-Bank-/Händlerassets plus bekannte Remote-Händlerlogos mit Cache, gemeinsame Balance-Karte, MoneyMood-Verläufe, Ripple, acht Einstellungsbereiche mit farbiger Seitenleiste, Footer-Iconbar, ziehbares/persistentes Widget, vier Original-Themepaletten, Anwendungsweite Themes einschließlich Dialogen, BTX-Typografie/Mosaiken/Textsteuerung/CRT, PNG/SVG/PDF- und TTF/OTF-Theme-Pakete mit Vorschau | SVG nur eigenständige Pfade ohne externe Inhalte; PDF erste Seite; umfassende Multi-Monitor-/DPI-Abnahme offen |
 | Umsatzliste | Konto-/Gesamtansicht, Suche, Filter, virtualisierte Zeilen, temporäre Scrollleiste, feste 348/840-Breiten, Scrollpositionserhalt, Pfeiltasten/Pos1/Ende, Details | 100.000 synthetische Buchungen in der UI geprüft; Speicherung weiterhin verschlüsseltes JSON statt SQLite, kein kompletter Tresor-Benchmark |
 | Buchungsdetails | Notizen, Kategorie, gelesen/markiert, eigene Logos, Reminder, drei PDF-/Bildanhänge à 3 MB | Logos pro Buchung oder Händler/Konto vorhanden; E-Mail-/Quittungsablauf, Windows-To-Do-Sync, vollständige Vorschauen fehlen |
 | Datenabgleich | Eindeutige Vormerkung→Buchung-/Referenz-Zuordnung, Mehrdeutigkeit wird nicht geraten; getrenntes Archiv erhält nicht zuordenbare Anreicherungen | Nicht alle bankabhängigen Referenzänderungen abgenommen |
-| Regeln | Priorität, UND/ODER, Kategorien, wiederkehrende Zuordnung, Händlerregeln mit Regex-Zeitlimit, Vorher-/Nachher-Vorschau, Originalnamen und Einzelbuchungs-Override; lokale Provider-/Karten-/ABWA-Erkennung | Eigene Namen/IBANs und gruppenweite Logos umgesetzt; nicht sämtliche Auto-Regelvarianten/Confidence-Metadaten portiert |
-| Analyse | MMI, FIFO-Geldalter, Abos/Fixkosten, Monatskalender mit Händlerlogos und Mindestzeilenhöhe, Kategorie-Ring, Kündigungslinks, manuelle Zuordnungen, Gehalt/Dispo/Toleranz | Genaue Detailgestaltung, Sonderfälle und Banktypcodes nicht vollständig portiert |
+| Regeln | Priorität, UND/ODER, Kategorien, wiederkehrende Zuordnung, Händlerregeln mit Regex-Zeitlimit, Vorher-/Nachher-Vorschau, Originalnamen und Einzelbuchungs-Override; lokale Provider-/Karten-/ABWA-Erkennung | Eigene Namen/IBANs und gruppenweite Logos umgesetzt; Mac-Kategorienkatalog, Herkunft/Confidence und Vorschläge aus Original-Buchungstext portiert; keine Garantie für unbekannte Händler |
+| Analyse | MMI, FIFO-Geldalter, Abos/Fixkosten, Monatskalender mit Händlerlogos und Mindestzeilenhöhe, Kategorie-Ring, Kündigungslinks, manuelle Zuordnungen, Gehalt/Dispo/Toleranz | Eigene Fixkostenansicht mit Buchungsdetails, ISO/GVC/SWIFT-Banktypcodes, bestätigte jährliche Kostenstatistik und Geldalter-Spanne/Trend ergänzt; Live-Bankabnahme offen |
 | Attention Inbox | Doppelte/ungewöhnliche/neue Abbuchungen, Preisänderung, Kategorienanstieg, Gehaltshinweis, Reminder, Gelesen-Snooze | Einfache regelbasierte Hinweise, keine Garantie auf korrekte Erkennung |
 | Datenimport / Export | CAMT 053 und OFX/QFX mit Vorschau/Dublettenabgleich; CSV, OFX und simple.report-PDF; ältere Bankumsätze mit Datumsauswahl | CAMT-Sammelbuchungen werden abgelehnt; Mac-Datenmigration auf Nutzerwunsch ausgeschlossen |
 | simplesend | Separater Schlüsselpfad, öffentliche Polar-Lizenzprüfung, Prüfdialog, Vorlagen, Termin und native Überweisung, E2E-ID, persistentes Journal, keine automatische Wiederholung unklarer Aufträge | Transfer-Key/-Secret fehlt; Lizenz und echte Bank-/VoP-/TAN-Flows nicht abgenommen; Quick-Send-Flyout mit vier kontogebundenen Favoriten vorhanden; Vorlagen-/Symbol-Editor und lokale kontogebundene Empfängervorschläge vorhanden; Inline-Prüfung, Zurück, explizites Senden, Abbruch und Ergebnis im Flyout vorhanden |
@@ -24,7 +24,7 @@ Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md)
 
 ## Ausgeführte Prüfungen
 
-- 70 lokale Selbsttests, null Fehler und null Compilerwarnungen: Fachlogik, Konto/Währung, Ticket-Signatur, native ABI, Import/Export, OCR/QR, Anreicherungsabgleich, verschlüsselter Rundlauf, KI-Vertrags-Fixtures ohne Netzwerk, CLI-Schreibsperre, Zahlungs-/Spartopfdaten.
+- 89 lokale Selbsttests, null Fehler und null Compilerwarnungen: Fachlogik, Konto/Währung, Ticket-Signatur, native ABI, Import/Export, OCR/QR, Anreicherungsabgleich, verschlüsselter Rundlauf, KI-Vertrags-Fixtures ohne Netzwerk, CLI-Schreibsperre, Zahlungs-/Spartopfdaten.
 - Gerenderte UI-Prüfung mit synthetischem Tresor: Passwortabfrage genau einmal, Abbrechen/falsch/richtig, erneutes Sperren, geschlossene Unterfenster, Flyout-Doppelklick, sämtliche Einstellungsbereiche und neue Dialoge; Widget-Fokusverlust, Positionswiederherstellung, Sperren, Footer-Aktionen und Theme-Rendering. Physisches Ziehen und Multi-Monitor-/DPI-Verhalten sind noch nicht manuell abgenommen.
 - Aktueller Installations- und Prüfnachweis unter release-checks.json; historische Versionsangaben in den folgenden Abschnitten beziehen sich auf frühere Pakete.
 - Keine echte Bankanmeldung, keine reale Zahlung, keine externe KI-Anfrage. Eine authentische Bankabnahme kann nicht durch lokale Fixtures ersetzt werden.
@@ -37,7 +37,7 @@ Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md)
 4. Für signierte öffentliche Verteilung: Herausgebername, Signierzugang und später Update-Adresse.
 5. Persönliche KI-Keys können Nutzer selbst unter Labs hinterlegen. Ohne Key bleibt die lokale Demo verfügbar.
 
-Die übrigen offenen Tabellenpunkte sind Entwicklungsarbeit, keine vom Nutzer zu beantwortenden Fragen. Insbesondere vollständige Theme-/BTX-Ansichten und weitere Mac-UX-Details sind mit diesem Stand nicht als fertig zu behandeln.
+Die übrigen offenen Tabellenpunkte sind Entwicklungsarbeit, keine vom Nutzer zu beantwortenden Fragen. Die drei Entwicklungsbereiche der Prio-1-Runde sind in [P1-IMPLEMENTATION.md](P1-IMPLEMENTATION.md) dokumentiert. Die darüber hinaus genannten Einschränkungen bleiben bestehen.
 
 - Installiertes Demo-Fenster per Windows-Fensterliste erkannt. Direkte native Screenshot-/Bedienprüfung wurde vom Computer-Use-Werkzeug nicht freigegeben; kein manueller UI-End-to-End-Nachweis. Die gerenderten UI-Prüfungen liefen erfolgreich.
 

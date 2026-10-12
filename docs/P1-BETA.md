@@ -1,6 +1,6 @@
 # Prio 1 vor einer belastbar abgenommenen Banking-Beta
 
-Stand: 12.10.2026. Dies sind offene Abnahmen, keine bereits bestätigten Produktfehler. Automatische Tests ersetzen keine reale Bank- oder Geräteprüfung.
+Stand: 12.10.2026. Die separat beauftragte Prio-1-Entwicklungsrunde ist in [P1-IMPLEMENTATION.md](P1-IMPLEMENTATION.md) dokumentiert. Dies sind offene Abnahmen, keine bereits bestätigten Produktfehler. Automatische Tests ersetzen keine reale Bank- oder Geräteprüfung.
 
 | Priorität | Aufgabe | Erledigt, wenn | Mitwirkung |
 |---|---|---|---|
@@ -14,4 +14,4 @@ Die normale Lese-Beta benötigt P1.5 nicht, solange Überweisungen klar als nich
 
 Der aktuelle Mac-Abgleich (Windows 0.17.0) wird separat mit lokalen Tests, UI-Rendering, CLI/MCP-Protokollprüfung und GitHub CI validiert. Details: [MAC-SYNC-2026-10.md](MAC-SYNC-2026-10.md).
 
-Nicht P1 dieser Runde: ausgeschlossene Mac-Datenmigration, geparkte Händleranbindungen/Belege und Aufrunden, MCP-Überweisungsentwürfe ohne eigenes Berechtigungsmodell, zusätzliche Designs/Themes. Die unsignierte Auslieferung ist für diese Beta ausdrücklich gewählt.
+Nicht P1 dieser Runde: ausgeschlossene Mac-Datenmigration, geparkte Händleranbindungen/Belege und Aufrunden, MCP-Überweisungsentwürfe ohne eigenes Berechtigungsmodell, zusätzliche Designs außerhalb der Original-Themes. Die unsignierte Auslieferung ist für diese Beta ausdrücklich gewählt.

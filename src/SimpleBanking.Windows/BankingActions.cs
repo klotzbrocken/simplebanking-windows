@@ -122,7 +122,8 @@ internal static class BankMapping
             output.Add(new(id, account.Id, date, amount, currency, merchant, purpose, "Unkategorisiert",
                 string.Equals(n["status"]?.GetValue<string>(),"Pending",StringComparison.OrdinalIgnoreCase),
                 ValueDate: valueDate, CounterpartyIban: party?["iban"]?.GetValue<string>() ?? "", CounterpartyBic: party?["bic"]?.GetValue<string>() ?? "",
-                AdditionalInformation: n["additionalInformation"]?.GetValue<string>() ?? "", PurposeCode: n["purposeCode"]?.GetValue<string>() ?? "", BankCounterpartyName: party?["name"]?.GetValue<string>() ?? "", EndToEndId: n["endToEndId"]?.GetValue<string>() ?? ""));
+                AdditionalInformation: n["additionalInformation"]?.GetValue<string>() ?? "", PurposeCode: n["purposeCode"]?.GetValue<string>() ?? "", BankCounterpartyName: party?["name"]?.GetValue<string>() ?? "", EndToEndId: n["endToEndId"]?.GetValue<string>() ?? "",
+                BankTransactionCode: BankBookingCode.Compact(n["bankTransactionCodes"]??n["bankTransactionCode"])));
         }
         return output;
     }

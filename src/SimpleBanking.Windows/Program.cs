@@ -173,7 +173,7 @@ internal sealed partial class MainWindow : Form
         BalanceChanged+=()=>{footerLeft.Enabled=!IsLocked;inboxButton.Badge=AttentionCount();inboxButton.Invalidate();sendButton.Enabled=!IsLocked&&SelectedAccount?.Currency=="EUR";};Disposed+=(_,_)=>more.Dispose();toolbar.Controls.Add(filterPills);
         var resetFilters=new LinkLabel{Text="Filter zurücksetzen",AutoSize=true,Margin=new Padding(0,7,0,0),LinkColor=ExportDesign.Accent,LinkBehavior=LinkBehavior.HoverUnderline};resetFilters.LinkClicked+=(_,_)=>{bookingFilters.Clear();RefreshFilterPills();RefreshEntries();};filterSummary.Controls.Add(filterResult);filterSummary.Controls.Add(resetFilters);toolbar.Controls.Add(filterSummary);
         BalanceChanged += () => Invalidate(true);
-        transactionList.OpenEntry += OpenEntryDetail;transactionList.RenameMerchant+=RenameMerchant;transactionList.ResetMerchant+=entry=>SetMerchantOverride(entry,null);
+        transactionList.OpenEntry += OpenEntryDetail;transactionList.RenameMerchant+=RenameMerchant;transactionList.CreateMerchantRule+=SaveMerchantRuleFromEntry;transactionList.ResetMerchant+=entry=>SetMerchantOverride(entry,null);
         transactionList.ToggleRead += entry => {
             var index = data.Entries.FindIndex(e => e.Id == entry.Id && e.AccountId == entry.AccountId);
             if (index < 0 || !Unlocked) return;
@@ -233,8 +233,9 @@ internal sealed partial class MainWindow : Form
     internal void UnlockFromSettings() => Unlock();
     internal void ApplyPreferences()
     {
-        var theme=Theme;themeWallpaper?.Dispose();themeWallpaper=theme.Image("wallpaper");BackColor=theme.Surface;ForeColor=theme.Ink;Padding=theme.Border!=null?new Padding(3):Padding.Empty;
-        void Style(Control root){foreach(Control control in root.Controls){if(control is not BalanceCard){control.BackColor=control is Panel or UserControl or HeaderIcon or FilterPill or Label or BookingRow or DateHeading?Color.Transparent:theme.Surface;control.ForeColor=theme.Ink;if(control is HeaderIcon icon){icon.Tint=theme.Secondary;icon.TextMode=theme.Lofi;}}Style(control);}}
+        ThemeStyling.Use(Preferences);
+        var theme=Theme;themeWallpaper?.Dispose();themeWallpaper=theme.Image(ClientSize.Width/(DeviceDpi/96f)>=594?"wallpaperWide":"wallpaper")??theme.Image("wallpaper");BackColor=theme.Surface;ForeColor=theme.Ink;Padding=theme.Border!=null?new Padding(3):Padding.Empty;
+        void Style(Control root){foreach(Control control in root.Controls){if(control is not BalanceCard){control.BackColor=control is Panel or UserControl or HeaderIcon or FilterPill or Label or BookingRow or DateHeading?Color.Transparent:theme.Surface;control.ForeColor=theme.Ink;if(control is HeaderIcon icon){icon.Tint=theme.Secondary;icon.TextMode=!theme.GlyphControls;}}Style(control);}}
         Style(this);
         recurringCache.Clear();
         ConfigureWindowsIntegration();
@@ -370,7 +371,7 @@ internal sealed partial class MainWindow : Form
             var previous=data.Entries[index];
             data.Entries[index] = changed with {CategoryManual=changed.Category!=entry.Category || changed.CategoryManual};
             try{Save();}catch{data.Entries[index]=previous;throw;}RefreshEntries();
-        }, SetMerchantLogo);
+        }, SetMerchantLogo,SaveMerchantRuleFromEntry);
         detail.ShowDialog(this);
     }
     void Dashboard() => OpenDashboard();

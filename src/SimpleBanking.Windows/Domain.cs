@@ -10,7 +10,8 @@ public sealed record Account(string Id, string Name, string Iban, string Currenc
 public sealed record Entry(string Id, string AccountId, DateOnly Date, decimal Amount, string Currency,
     string Merchant, string Purpose, string Category, bool Pending = false, bool Read = false, bool Flagged = false, string Note = "",
     DateOnly? ValueDate = null, string CounterpartyIban = "", string CounterpartyBic = "", string AdditionalInformation = "", string PurposeCode = "", string? BankCounterpartyName = null, string EndToEndId = "", bool CategoryManual = false,
-    List<BookingAttachment>? Attachments = null, DateTime? ReminderAt = null, bool ReminderDone = false, string? OriginalMerchant = null, byte[]? CustomLogo = null, string? MerchantOverride = null, [property: System.Text.Json.Serialization.JsonIgnore] byte[]? MerchantLogo = null);
+    List<BookingAttachment>? Attachments = null, DateTime? ReminderAt = null, bool ReminderDone = false, string? OriginalMerchant = null, byte[]? CustomLogo = null, string? MerchantOverride = null, [property: System.Text.Json.Serialization.JsonIgnore] byte[]? MerchantLogo = null,
+    string BankTransactionCode = "", string? MerchantSource = null, double? MerchantConfidence = null);
 public sealed record BookingAttachment(string Id,string Name,byte[] Content);
 public sealed record TransferDraft(string AccountId, string Name, string Iban, decimal Amount, string Purpose, DateOnly? Date = null, string? RoundupId = null);
 public sealed class BankData
