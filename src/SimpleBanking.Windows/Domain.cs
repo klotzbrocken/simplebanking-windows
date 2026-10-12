@@ -16,6 +16,8 @@ public sealed record BookingAttachment(string Id,string Name,byte[] Content);
 public sealed record TransferDraft(string AccountId, string Name, string Iban, decimal Amount, string Purpose, DateOnly? Date = null, string? RoundupId = null);
 public sealed class BankData
 {
+    public List<AutomationClient> AutomationClients {get;set;}=[];
+    public List<AutomationDraft> AutomationDrafts {get;set;}=[];
     public AiConfiguration Ai {get;set;}=new();
     public Dictionary<string,DateOnly> AttentionReadUntil {get;set;} = new();
     public Dictionary<string,byte[]> MerchantLogos {get;set;} = new();

@@ -82,14 +82,16 @@ internal static class UiReview
 
         using(var chatTimer=new System.Windows.Forms.Timer{Interval=80}) {
             bool reviewed=false;
-            chatTimer.Tick+=(_,_)=>{
+            chatTimer.Tick+=async(_,_)=>{
                 var chat=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text.StartsWith("AI-Assistent ·"));if(chat==null)return;chatTimer.Stop();
                 var input=Descendants(chat).OfType<TextBox>().Single(t=>!t.ReadOnly);
                 var send=Descendants(chat).OfType<Button>().Single(b=>b.Text=="Fragen");
                 input.Text="Wie hoch sind meine Ausgaben?";send.PerformClick();
+                for(int n=0;!send.Enabled&&n<200;n++)await Task.Delay(25);
                 input.Text="Und meine Einnahmen?";send.PerformClick();
+                for(int n=0;!send.Enabled&&n<200;n++)await Task.Delay(25);
                 var transcript=Descendants(chat).OfType<TextBox>().Single(t=>t.ReadOnly).Text;
-                if(!transcript.Contains("Wie hoch")||!transcript.Contains("Und meine")||!transcript.Contains("Lokale Demo-Zusammenfassung"))throw new InvalidOperationException("Demo conversation lost its history.");
+                if(!transcript.Contains("Wie hoch")||!transcript.Contains("Und meine")||!transcript.Contains("Lokale Demo-Auswertung"))throw new InvalidOperationException("Demo conversation lost its history.");
                 using var bitmap=new Bitmap(chat.Width,chat.Height);chat.DrawToBitmap(bitmap,new Rectangle(Point.Empty,chat.Size));bitmap.Save(Path.Combine(folder,"ai-conversation-demo.png"));reviewed=true;chat.Close();
             };
             chatTimer.Start();main.OpenAiChat();if(!reviewed)throw new InvalidOperationException("AI conversation review missing.");
@@ -208,6 +210,26 @@ internal static class UiReview
         Modal(main.OpenMerchantRules,"Händler-Regeln","merchant-rules");
         Modal(main.OpenRoundups,"Aufrunden · Spartopf","roundups");
         Modal(main.OpenAiChat,"AI-Assistent · DEMO","ai-demo");
+        using(var updater=new UpdateWindow(true)){Capture(updater,"p2-updater");updater.Show();Descendants(updater).OfType<Button>().Single(b=>b.Text=="Nach Updates suchen").PerformClick();Capture(updater,"p2-updater-demo");}
+        using(var clientEditor=new AutomationClientEditor(fixtureData.Accounts))Capture(clientEditor,"p2-mcp-client-editor");
+        var automation=AutomationAccess.Create("Demo-Assistent",["accounts","drafts"],[fixtureData.Accounts[0].Id],90);fixtureData.AutomationClients.Add(automation.Client);
+        Modal(main.ManageAutomationClients,"CLI / MCP · Clients","p2-mcp-clients");
+        main.Preferences.AutomationEnabled=true;int oldDrafts=fixtureData.Drafts.Count,oldPayments=fixtureData.Payments.Count;
+        var draftArgs=new System.Text.Json.Nodes.JsonObject{["account_id"]=fixtureData.Accounts[0].Id,["recipient"]="Demo-Empfänger",["iban"]="DE89370400440532013000",["amount"]=12.34m,["purpose"]="Synthetischer MCP-Test",["request_id"]="review"};
+        var request=new System.Text.Json.Nodes.JsonObject{["name"]="prepare_transfer",["token"]=automation.Token,["arguments"]=draftArgs};
+        main.DispatchAutomation(request);main.DispatchAutomation(request);
+        if(fixtureData.AutomationDrafts.Count!=1||fixtureData.Drafts.Count!=oldDrafts||fixtureData.Payments.Count!=oldPayments)throw new InvalidOperationException("MCP request executed a payment or created duplicate drafts.");
+        main.Preferences.AutomationEnabled=false;bool denied=false;try{main.DispatchAutomation(request);}catch(InvalidOperationException){denied=true;}if(!denied)throw new InvalidOperationException("Disabled automation accepted a request.");
+        using(var reviewTimer=new System.Windows.Forms.Timer{Interval=80}){
+            reviewTimer.Tick+=(_,_)=>{
+                var list=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text=="MCP · Überweisungsentwürfe prüfen");if(list==null)return;reviewTimer.Stop();
+                Capture(list,"p2-mcp-drafts");list.Show();
+                using var approveTimer=new System.Windows.Forms.Timer{Interval=80};approveTimer.Tick+=(_,_)=>{
+                    var preview=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text=="Entwurf von Demo-Assistent");if(preview==null)return;approveTimer.Stop();Capture(preview,"p2-mcp-draft-approval");preview.Show();Descendants(preview).OfType<Button>().Single(b=>b.Text=="Als Entwurf freigeben").PerformClick();
+                };approveTimer.Start();Descendants(list).OfType<Button>().Single(b=>b.Text=="Ausgewählten Entwurf prüfen").PerformClick();list.Close();
+            };reviewTimer.Start();main.ReviewAutomationDrafts();
+        }
+        if(fixtureData.Drafts.Count!=oldDrafts+1||fixtureData.Payments.Count!=oldPayments||fixtureData.AutomationDrafts.Single().State!="Als Entwurf freigegeben")throw new InvalidOperationException("Explicit MCP draft approval failed or executed a payment.");
         using(var templateEditor=new PaymentTemplateEditor(DemoData.Create().Accounts[0].Id,DemoData.Create().PaymentTemplates[0],0)){Capture(templateEditor,"template-editor");templateEditor.Show();Descendants(templateEditor).OfType<TextBox>().Single(t=>t.AccessibleName=="Symbol").Text="🏠";Descendants(templateEditor).OfType<Button>().Single(t=>t.Text=="Speichern").PerformClick();if(templateEditor.Result?.Symbol!="🏠"||templateEditor.Result.Draft.AccountId!=DemoData.Create().Accounts[0].Id)throw new InvalidOperationException("Template edit lost symbol or source account.");}
         using(var transfer=new TransferWindow(DemoData.Create().Accounts[0],DemoData.Create().PaymentTemplates[0].Draft,true)){
             Capture(transfer,"transfer-demo");transfer.Show();Descendants(transfer).OfType<Button>().Single(b=>b.Text=="Demo-Versand prüfen").PerformClick();if(!transfer.SendRequested||transfer.Draft?.Amount!=25)throw new InvalidOperationException("Demo transfer review did not preserve draft.");transfer.Hide();

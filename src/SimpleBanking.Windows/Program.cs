@@ -125,7 +125,7 @@ internal sealed partial class MainWindow : Form
     {
         this.demo = demo;this.helloKeys=helloKeys;
         Preferences=demo||storageDirectory!=null?new AppPreferences{Ephemeral=true}:AppPreferences.Load();
-        Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>Icon?.Dispose();
+        Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>{Icon?.Dispose();aiCategoryCancellation?.Cancel();};
         Paint+=(_,e)=>{if(Theme.Border is {} border){using var pen=new Pen(border,3);e.Graphics.DrawRectangle(pen,1,1,ClientSize.Width-3,ClientSize.Height-3);}};
         store = new EncryptedStore(storageDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SimplebankingWindows", demo ? "Demo" : "Live"));
         Text = "simplebanking" + (demo ? " · DEMO" : ""); FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=true;ClientSize = new Size(360, 688);
@@ -355,6 +355,7 @@ internal sealed partial class MainWindow : Form
     public void Lock()
     {
         Interlocked.Increment(ref securityEpoch);
+        aiCategoryCancellation?.Cancel();aiCategoryQueue.Clear();
         logoCancellation?.Cancel();
         if (bankBusy) { MessageBox.Show(this, "Bitte den laufenden Bankvorgang zuerst abschließen."); return; }
         if (demo) { Hide(); return; }

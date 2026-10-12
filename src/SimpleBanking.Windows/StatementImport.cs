@@ -11,7 +11,7 @@ internal static class StatementImport
     static string? Child(XElement element,string name)=>element.Elements().FirstOrDefault(e=>e.Name.LocalName==name)?.Value;
     static XElement? Node(XElement element,string name)=>element.Descendants().FirstOrDefault(e=>e.Name.LocalName==name);
     static string CamtBankCode(XElement item){
-        var bank=Node(item,"BkTxCd");if(bank==null)return "";var parts=new List<string>();
+        var bank=item.Elements().FirstOrDefault(e=>e.Name.LocalName=="BkTxCd");if(bank==null)return "";var parts=new List<string>();
         var domain=Node(bank,"Domn");var family=domain==null?null:Node(domain,"Fmly");
         if(domain!=null&&family!=null)parts.Add("ISO:"+Child(domain,"Cd")+"/"+Child(family,"Cd")+"/"+Child(family,"SubFmlyCd"));
         var proprietary=Node(bank,"Prtry");if(proprietary!=null){string code=Child(proprietary,"Cd")??"",issuer=Child(proprietary,"Issr")??"";if(code.Length>0)parts.Add((issuer.Equals("DK",StringComparison.OrdinalIgnoreCase)||issuer.Equals("ZKA",StringComparison.OrdinalIgnoreCase)?"GVC:":"OTHER-"+issuer+":")+code);}
@@ -32,12 +32,27 @@ internal static class StatementImport
                 var dateNode=item.Elements().FirstOrDefault(e=>e.Name.LocalName=="BookgDt");var valueNode=item.Elements().FirstOrDefault(e=>e.Name.LocalName=="ValDt");var date=Date(dateNode?.Value??valueNode?.Value);
                 DateOnly? valueDate=valueNode!=null?Date(valueNode.Value):null;
                 var details=item.Descendants().Where(e=>e.Name.LocalName=="TxDtls").ToArray();
-                if(details.Length>1)throw new InvalidDataException("Diese Datei enthält Sammelbuchungen mit mehreren Einzelposten. Bitte einen Export mit Einzelbuchungen verwenden.");
-                var party=Node(item,value<0?"Cdtr":"Dbtr");string name=party==null?"Unbekannt":Node(party,"Nm")?.Value??"Unbekannt";
-                string memo=string.Join(" ",item.Descendants().Where(e=>e.Name.LocalName=="Ustrd").Select(e=>e.Value));
-                string reference=Node(item,"EndToEndId")?.Value??"";string status=Node(item,"Sts")?.Value??"BOOK";
-                string partyIban=Node(item,value<0?"CdtrAcct":"DbtrAcct") is {} partyAccount?Node(partyAccount,"IBAN")?.Value??"":"";
-                result.Add(new("",account.Id,date,value,currency,name,memo,"Unkategorisiert",Pending:status=="PDNG",ValueDate:valueDate,CounterpartyIban:partyIban,AdditionalInformation:Node(item,"AddtlNtryInf")?.Value??"",PurposeCode:Node(item,"Purp")?.Value??"",BankCounterpartyName:name,EndToEndId:reference=="NOTPROVIDED"?"":reference,BankTransactionCode:CamtBankCode(item)));
+                var batch=new List<Entry>();
+                foreach(var detail in details.Length>0?details:[item]){
+                    decimal individual=value;
+                    if(details.Length>1){
+                        // Prefer the amount in the account currency, never an instructed FX amount.
+                        var candidates=new[]{Node(detail,"CntrValAmt"),Node(detail,"TxAmt")}.Where(n=>n!=null).Select(n=>Node(n!,"Amt")).Concat(detail.Elements().Where(n=>n.Name.LocalName=="Amt"));
+                        var part=candidates.FirstOrDefault(n=>n!=null&&(n.Attribute("Ccy")?.Value??currency)==currency)??throw new InvalidDataException("Sammelbuchung: Einzelbetrag in Kontowährung fehlt.");
+                        individual=decimal.Parse(part.Value,CultureInfo.InvariantCulture);
+                        if(individual<0)throw new InvalidDataException("Sammelbuchung: ungültiger Einzelbetrag.");
+                        if((Child(detail,"CdtDbtInd")??Child(item,"CdtDbtInd"))=="DBIT")individual=-individual;
+                    }
+                    var party=Node(detail,individual<0?"Cdtr":"Dbtr");string name=party==null?"Unbekannt":Node(party,"Nm")?.Value??"Unbekannt";
+                    string memo=string.Join(" ",detail.Descendants().Where(e=>e.Name.LocalName=="Ustrd").Select(e=>e.Value));
+                    string reference=Node(detail,"EndToEndId")?.Value??"";if(reference is "" or "NOTPROVIDED")reference=Node(detail,"TxId")?.Value??"";
+                    string status=Node(item,"Sts")?.Value??"BOOK";
+                    string partyIban=Node(detail,individual<0?"CdtrAcct":"DbtrAcct") is {} partyAccount?Node(partyAccount,"IBAN")?.Value??"":"";
+                    string code=CamtBankCode(detail);if(code.Length==0)code=CamtBankCode(item);
+                    batch.Add(new("",account.Id,date,individual,currency,name,memo,"Unkategorisiert",Pending:status=="PDNG",ValueDate:valueDate,CounterpartyIban:partyIban,AdditionalInformation:Node(detail,"AddtlTxInf")?.Value??Node(item,"AddtlNtryInf")?.Value??"",PurposeCode:Node(detail,"Purp")?.Value??"",BankCounterpartyName:name,EndToEndId:reference=="NOTPROVIDED"?"":reference,BankTransactionCode:code));
+                }
+                if(batch.Sum(e=>e.Amount)!=value)throw new InvalidDataException("Sammelbuchung: Einzelposten stimmen nicht mit dem Gesamtbetrag überein. Es wurde nichts importiert.");
+                result.AddRange(batch);
             }
         }
         if(!doc.Descendants().Any(e=>e.Name.LocalName=="Stmt"))throw new InvalidDataException("Keine CAMT-Kontoauszüge gefunden.");return Identify(result);
@@ -59,7 +74,7 @@ internal static class StatementImport
 }
 internal sealed partial class MainWindow
 {
-    void ImportStatements(){
+    async void ImportStatements(){
         if(!RequireUnlocked()||SelectedAccount is not {} account)return;
         using var dialog=new OpenFileDialog{Filter="Kontoauszüge|*.xml;*.ofx;*.qfx|CAMT 053|*.xml|OFX / QFX|*.ofx;*.qfx",Multiselect=false};if(dialog.ShowDialog(this)!=DialogResult.OK)return;
         try{
@@ -67,7 +82,10 @@ internal sealed partial class MainWindow
             using var preview=new Form{Text="Umsätze importieren · "+account.Name,ClientSize=new Size(700,460),StartPosition=FormStartPosition.CenterParent,Font=Font};var grid=DashboardWindow.Table(["Datum","Händler","Betrag","Zweck"]);foreach(var e in additions)grid.Rows.Add(e.Date.ToString("dd.MM.yyyy"),e.Merchant,UiFormat.Money(e.Amount,e.Currency),e.Purpose);preview.Controls.Add(grid);
             var apply=DashboardWindow.ActionButton(additions.Count+" Umsätze importieren",()=>preview.DialogResult=DialogResult.OK);apply.Dock=DockStyle.Bottom;preview.Controls.Add(apply);
             if(preview.ShowDialog(this)!=DialogResult.OK)return;
-            data.Entries.AddRange(additions);ApplyAnalysisRules(new HashSet<string>{account.Id},true);Save();Populate();status.Text=$"{additions.Count} importiert · {parsed.Count-additions.Count} bereits vorhanden";
+            var previous=data.Entries.ToList();var previousAssignments=new Dictionary<string,string>(data.RecurringAssignments);
+            try{data.Entries.AddRange(additions);ApplyAnalysisRules(new HashSet<string>{account.Id},true);Save();}catch{data.Entries=previous;data.RecurringAssignments=previousAssignments;throw;}
+            Populate();status.Text=$"{additions.Count} importiert · {parsed.Count-additions.Count} bereits vorhanden";
+            await AutomaticallyCategorize(account.Id,additions.Select(e=>e.Id).ToHashSet());
         }catch(Exception e) when(e is IOException or XmlException or FormatException or InvalidDataException){MessageBox.Show(this,e.Message,"Import nicht abgeschlossen");}
     }
 }

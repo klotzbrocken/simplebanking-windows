@@ -38,7 +38,7 @@ internal sealed partial class MainWindow
         if (data.Yaxi is not { } settings || data.Connections.FirstOrDefault(c => c.Id == account.ConnectionId) is not { } connection)
         { if(allowInteractive)MessageBox.Show(this, "Bankverbindung oder Yaxi-Konfiguration fehlt."); return; }
         if(!allowInteractive&&connection.ApprovalRequired)return;
-        bankBusy = true; accounts.Enabled = false;
+        bankBusy = true; accounts.Enabled = false;HashSet<string> categorizeIds=[];
         try {
             using var client = new YaxiClient(settings.Integration); using var tickets = new TicketClient(settings); using var callback = new LoopbackCallback();
             using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));bankCancellation=timeout;
@@ -79,6 +79,7 @@ internal sealed partial class MainWindow
             var connectionIndex=data.Connections.FindIndex(c=>c.Id==connection.Id);
             data.Connections[connectionIndex]=connection with{ApprovalRequired=false};
             Save(); Populate(); if(hasNewBookings)NewBookings?.Invoke(); status.Text = "Aktualisiert · " + DateTime.Now.ToString("g") + ".";
+            categorizeIds=entries.Where(e=>!previous.ContainsKey(e.Id)).Select(e=>e.Id).ToHashSet();
         }
         catch (BankApprovalRequiredException) {
             var connectionIndex=data.Connections.FindIndex(c=>c.Id==connection.Id);
@@ -88,6 +89,7 @@ internal sealed partial class MainWindow
         }
         catch (Exception e) { status.Text = e is YaxiException or InvalidDataException or OperationCanceledException ? e.Message : "Bankabruf fehlgeschlagen: " + e.GetType().Name; Populate(); }
         finally { bankBusy = false; bankCancellation=null; accounts.Enabled = true; if(forceLockPending){forceLockPending=false;Lock();} }
+        await AutomaticallyCategorize(account.Id,categorizeIds);
     }
 }
 
