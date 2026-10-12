@@ -1,4 +1,4 @@
-# Stand der Windows-Portierung — 0.19.0, 12.10.2026
+# Stand der Windows-Portierung — 0.19.1, 12.10.2026
 
 Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md), einschließlich Bankfreigaben, Fixkosten, Banklogos, Sicherungen und lesenden CLI/MCP-Auswertungen. Ursprüngliche Referenz: Mac-Quellcode 2.0.7, Commit 933e158 (vollständige Herkunft unter provenance.json), ursprüngliche Assets und Yaxi SDK 0.2.0. Designreferenz zusätzlich: Desktop/export, insbesondere kombinierte Filter und Passwort-/Hello-Dialog (0.15–0.16, einschließlich Details, Tastenkappen und About-Karten). Diese aktuelle Matrix ersetzt die früheren Fortschrittslisten. **Vollständige Funktions- und Designparität ist nicht erreicht.**
 
@@ -6,8 +6,8 @@ Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md)
 |---|---|---|
 | Windows-App | Selbstständige x64-EXE, Tray/Flyout, Single-Instance-Aktivierung, Benutzer-MSI, Startmenü und Desktop | Updater mit GitHub-Releaseprüfung, Download/Hashprüfung und explizitem Setup-Start umgesetzt; Signierung und saubere zweite Testmaschine offen |
 | Einrichten / Entsperren | Assistent, Masterpasswort, Banksuche, Zugang, Kontenauswahl; automatisches Hello-Entsperren mit Passwort-Fallback, Einrichten/Deaktivieren; getestetes Sperren | Live-Bank-/TAN-Abnahme, persönliche Hello-PIN-/Biometrie-Abnahme; nicht jedes Mac-Detail visuell identisch |
-| Darstellung | Original-Bank-/Händlerassets plus bekannte Remote-Händlerlogos mit Cache, gemeinsame Balance-Karte, MoneyMood-Verläufe, Ripple, acht Einstellungsbereiche mit farbiger Seitenleiste, Footer-Iconbar, ziehbares/persistentes Widget, vier Original-Themepaletten, Anwendungsweite Themes einschließlich Dialogen, BTX-Typografie/Mosaiken/Textsteuerung/CRT, PNG/SVG/PDF- und TTF/OTF-Theme-Pakete mit Vorschau | SVG nur eigenständige Pfade ohne externe Inhalte; PDF erste Seite; umfassende Multi-Monitor-/DPI-Abnahme offen |
-| Umsatzliste | Konto-/Gesamtansicht, Suche, Filter, virtualisierte Zeilen, temporäre Scrollleiste, feste 348/840-Breiten, Scrollpositionserhalt, Pfeiltasten/Pos1/Ende, Details | 100.000 synthetische Buchungen in der UI geprüft; Speicherung weiterhin verschlüsseltes JSON statt SQLite, kein kompletter Tresor-Benchmark |
+| Darstellung | Original-Bank-/Händlerassets plus bekannte Remote-Händlerlogos mit Cache, gemeinsame Balance-Karte, MoneyMood-Verläufe, Ripple, acht Einstellungsbereiche mit farbiger Seitenleiste, Footer-Iconbar, ziehbares/persistentes Widget, vier Original-Themepaletten, Anwendungsweite Themes einschließlich Dialogen, BTX-Typografie/Mosaiken/Textsteuerung/CRT, PNG/SVG/PDF- und TTF/OTF-Theme-Pakete mit Vorschau | SVG nur eigenständige Pfade ohne externe Inhalte; PDF erste Seite; Positionskorrektur bei Monitor-/DPI-Wechseln und Quick-Send-Ausklappen, synthetische Geometrietests für 100–200 %; physische Multi-Monitor-/DPI-Abnahme offen |
+| Umsatzliste | Konto-/Gesamtansicht, Suche, Filter, virtualisierte Zeilen, temporäre Scrollleiste, feste 348/840-Breiten, Scrollpositionserhalt, Pfeiltasten/Pos1/Ende, Details | 100.000 synthetische Buchungen in UI und vollständigem Tresor-Rundlauf geprüft; kompakte Speicherung weiterhin verschlüsseltes JSON statt SQLite und vollständig im Arbeitsspeicher |
 | Buchungsdetails | Notizen, Kategorie, gelesen/markiert, eigene Logos, Reminder, drei PDF-/Bildanhänge à 3 MB | Logos pro Buchung oder Händler/Konto vorhanden; E-Mail-/Quittungsablauf, Windows-To-Do-Sync, vollständige Vorschauen fehlen |
 | Datenabgleich | Eindeutige Vormerkung→Buchung-/Referenz-Zuordnung, Mehrdeutigkeit wird nicht geraten; getrenntes Archiv erhält nicht zuordenbare Anreicherungen | Nicht alle bankabhängigen Referenzänderungen abgenommen |
 | Regeln | Priorität, UND/ODER, Kategorien, wiederkehrende Zuordnung, Händlerregeln mit Regex-Zeitlimit, Vorher-/Nachher-Vorschau, Originalnamen und Einzelbuchungs-Override; lokale Provider-/Karten-/ABWA-Erkennung | Eigene Namen/IBANs und gruppenweite Logos umgesetzt; Mac-Kategorienkatalog, Herkunft/Confidence und Vorschläge aus Original-Buchungstext portiert; keine Garantie für unbekannte Händler |
@@ -24,7 +24,7 @@ Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md)
 
 ## Ausgeführte Prüfungen
 
-- 97 lokale Selbsttests, null Fehler und null Compilerwarnungen: Fachlogik, Konto/Währung, Ticket-Signatur, native ABI, Import/Export, OCR/QR, Anreicherungsabgleich, verschlüsselter Rundlauf, KI-Vertrags-Fixtures ohne Netzwerk, CLI-Schreibsperre, Zahlungs-/Spartopfdaten.
+- 101 lokale Selbsttests, null Fehler und null Compilerwarnungen: Fachlogik, Konto/Währung, Ticket-Signatur, native ABI, Import/Export, OCR/QR, Anreicherungsabgleich, verschlüsselter Rundlauf, KI-Vertrags-Fixtures ohne Netzwerk, CLI-Schreibsperre, Zahlungs-/Spartopfdaten.
 - Gerenderte UI-Prüfung mit synthetischem Tresor: Passwortabfrage genau einmal, Abbrechen/falsch/richtig, erneutes Sperren, geschlossene Unterfenster, Flyout-Doppelklick, sämtliche Einstellungsbereiche und neue Dialoge; Widget-Fokusverlust, Positionswiederherstellung, Sperren, Footer-Aktionen und Theme-Rendering. Physisches Ziehen und Multi-Monitor-/DPI-Verhalten sind noch nicht manuell abgenommen.
 - Aktueller Installations- und Prüfnachweis unter release-checks.json; historische Versionsangaben in den folgenden Abschnitten beziehen sich auf frühere Pakete.
 - Keine echte Bankanmeldung, keine reale Zahlung, keine externe KI-Anfrage. Eine authentische Bankabnahme kann nicht durch lokale Fixtures ersetzt werden.
@@ -37,7 +37,7 @@ Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md)
 4. Für signierte öffentliche Verteilung: Herausgebername, Signierzugang und später Update-Adresse.
 5. Persönliche KI-Keys können Nutzer selbst unter Labs hinterlegen. Ohne Key bleibt die lokale Demo verfügbar.
 
-Die übrigen offenen Tabellenpunkte sind Entwicklungsarbeit, keine vom Nutzer zu beantwortenden Fragen. Die Entwicklungsrunden sind in [P1-IMPLEMENTATION.md](P1-IMPLEMENTATION.md) und [P2-IMPLEMENTATION.md](P2-IMPLEMENTATION.md) dokumentiert. Die darüber hinaus genannten Einschränkungen bleiben bestehen.
+Die übrigen offenen Tabellenpunkte sind Entwicklungsarbeit, keine vom Nutzer zu beantwortenden Fragen. Zusätzlich: [Desktop-Stabilität und große Tresore](DESKTOP-STABILITY.md). Die Entwicklungsrunden sind in [P1-IMPLEMENTATION.md](P1-IMPLEMENTATION.md) und [P2-IMPLEMENTATION.md](P2-IMPLEMENTATION.md) dokumentiert. Die darüber hinaus genannten Einschränkungen bleiben bestehen.
 
 - Installiertes Demo-Fenster per Windows-Fensterliste erkannt. Direkte native Screenshot-/Bedienprüfung wurde vom Computer-Use-Werkzeug nicht freigegeben; kein manueller UI-End-to-End-Nachweis. Die gerenderten UI-Prüfungen liefen erfolgreich.
 

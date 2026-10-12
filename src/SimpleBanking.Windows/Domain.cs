@@ -85,6 +85,15 @@ public static class BankingRules
 // Independently encrypted data roots for demo and real use. Product API keys are build resources.
 public sealed class EncryptedStore(string root)
 {
+    // Omit only optional Entry constructor defaults. Older readers reconstruct the same
+    // defaults; required fields and non-default enrichment values stay in the v1 format.
+    static readonly JsonSerializerOptions CompactJson=CreateCompactJson();
+    static JsonSerializerOptions CreateCompactJson(){
+        var resolver=new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver();
+        var defaults=typeof(Entry).GetConstructors().Single().GetParameters().Where(p=>p.HasDefaultValue).ToDictionary(p=>p.Name!,p=>p.DefaultValue,StringComparer.OrdinalIgnoreCase);
+        resolver.Modifiers.Add(type=>{if(type.Type==typeof(Entry))foreach(var property in type.Properties)if(defaults.TryGetValue(property.Name,out var value))property.ShouldSerialize=(_,actual)=>!Equals(actual,value);});
+        return new(){TypeInfoResolver=resolver,DefaultIgnoreCondition=System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull};
+    }
     private const int Iterations = 600_000;
     private static readonly byte[] Aad = "simplebanking-windows-v1"u8.ToArray();
     public string Root { get; } = Path.GetFullPath(root);
@@ -95,8 +104,8 @@ public sealed class EncryptedStore(string root)
     {
         var salt = RandomNumberGenerator.GetBytes(16);
         var nonce = RandomNumberGenerator.GetBytes(12);
+        var plain = JsonSerializer.SerializeToUtf8Bytes(data,CompactJson);
         var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA256, 32);
-        var plain = JsonSerializer.SerializeToUtf8Bytes(data);
         var cipher = new byte[plain.Length]; var tag = new byte[16];
         try { using var aes = new AesGcm(key, 16); aes.Encrypt(nonce, plain, cipher, tag, Aad); }
         finally { CryptographicOperations.ZeroMemory(key); CryptographicOperations.ZeroMemory(plain); }

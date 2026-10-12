@@ -503,6 +503,7 @@ internal static class SelfTests
         Test("Tampering rejected", () => { var bytes = EncryptedStore.Encrypt(DemoData.Create(), "correct"); var node = System.Text.Json.Nodes.JsonNode.Parse(bytes)!; var cipher = Convert.FromBase64String(node["Ciphertext"]!.GetValue<string>()); cipher[0] ^= 1; node["Ciphertext"] = Convert.ToBase64String(cipher); try { EncryptedStore.Decrypt(JsonSerializer.SerializeToUtf8Bytes(node), "correct"); } catch (CryptographicException) { return; } throw new Exception("Accepted modified ciphertext"); });
         Test("Cross-account currency inconsistency rejected", () => { var d = DemoData.Create(); d.Entries[0] = d.Entries[0] with { Currency = "USD" }; try { EncryptedStore.Decrypt(EncryptedStore.Encrypt(d, "test"), "test"); } catch (InvalidDataException) { return; } throw new Exception("Accepted inconsistent backup"); });
         PriorityTwoTests.Register(Test);
+        DesktopRegressionTests.Register(Test);
         var report = JsonSerializer.Serialize(new { passed = results.Count - failed, failed, tests = results }, new JsonSerializerOptions { WriteIndented = true });
         var index = Array.IndexOf(args, "--report");
         if (index >= 0 && index + 1 < args.Length) File.WriteAllText(args[index + 1], report);

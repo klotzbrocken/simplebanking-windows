@@ -142,6 +142,11 @@ internal static class UiReview
         flyout.SetPinned(true);flyout.Show();Descendants(flyout).OfType<Button>().Single(b=>b.AccessibleName=="Widget schließen").PerformClick();
         if(flyout.Visible||flyout.IsPinned||main.Preferences.WidgetEnabled)throw new InvalidOperationException("Widget close did not clear its persistent state.");
         flyout.ToggleQuickSend();Capture(flyout,"quick-send");flyout.Show();
+        flyout.SetPinned(true);var workArea=Screen.FromControl(flyout).WorkingArea;flyout.Location=new Point(workArea.Right-flyout.Width,workArea.Bottom-178);flyout.RefreshCards();
+        if(!workArea.Contains(flyout.Bounds))throw new InvalidOperationException("Expanded widget escaped the work area.");
+        flyout.Location=new Point(30000,30000);flyout.FitWidgetToDisplay();
+        if(!Screen.AllScreens.Any(s=>s.WorkingArea.Contains(flyout.Bounds)))throw new InvalidOperationException("Disconnected-monitor widget did not return to a visible display.");
+        flyout.SetPinned(false);
         var quick=Descendants(flyout).OfType<QuickSendPanel>().Single();
         Descendants(quick).OfType<Button>().Single(b=>b.AccessibleName=="Vorlage Gemeinsames Essen").PerformClick();
         if(!Descendants(quick).OfType<Button>().Single(b=>b.Text=="Prüfen").Enabled)throw new InvalidOperationException("Quick Send favorite did not fill a valid draft.");

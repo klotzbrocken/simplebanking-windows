@@ -10,6 +10,7 @@ internal static class Program
         if(args.Contains("--mcp"))return LocalAutomation.RunMcp(args.Contains("--demo"));
         if(args.Contains("--cli"))return LocalAutomation.RunCli(args);
         if (args.Contains("--self-test")) return SelfTests.Run(args);
+        if(args.Length==2&&args[0]=="--benchmark-vault"){try{return DesktopRegressionTests.Benchmark(args[1]);}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
         ApplicationConfiguration.Initialize();
         if(args.Contains("--test-tray-lifecycle"))return TrayLifecycleTest.Run();
         if (args.Length == 2 && args[0] == "--render-ui") return UiReview.Render(args[1]);
@@ -124,6 +125,7 @@ internal sealed partial class MainWindow : Form
     public MainWindow(bool demo, string? storageDirectory = null,IHelloKeys? helloKeys=null)
     {
         this.demo = demo;this.helloKeys=helloKeys;
+        AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);
         Preferences=demo||storageDirectory!=null?new AppPreferences{Ephemeral=true}:AppPreferences.Load();
         Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>{Icon?.Dispose();aiCategoryCancellation?.Cancel();};
         Paint+=(_,e)=>{if(Theme.Border is {} border){using var pen=new Pen(border,3);e.Graphics.DrawRectangle(pen,1,1,ClientSize.Width-3,ClientSize.Height-3);}};
@@ -245,7 +247,7 @@ internal sealed partial class MainWindow : Form
         RefreshEntries();
     }
     internal void OpenMainWindow() {
-        Show(); WindowState=FormWindowState.Normal;Activate();
+        Show(); WindowState=FormWindowState.Normal;FitWindowToDisplay();Activate();
         if(IsLocked && !unlockQueued && !unlocking) {
             unlockQueued=true;BeginInvoke(new Action(()=>{unlockQueued=false;if(IsLocked&&!unlocking)Unlock();}));
         }
