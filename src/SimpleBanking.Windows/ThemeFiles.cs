@@ -15,7 +15,7 @@ internal static class ThemeFiles
 }
 internal sealed partial class SettingsWindow
 {
-    void ThemeTools(){var row=new FlowLayoutPanel{Height=38,WrapContents=false,Margin=new Padding(0,4,0,8)};row.Controls.Add(DashboardWindow.ActionButton("Importieren …",ImportTheme));row.Controls.Add(DashboardWindow.ActionButton("Exportieren …",ExportTheme));row.Controls.Add(DashboardWindow.ActionButton("Verwalten …",ManageThemes));row.Controls.Add(DashboardWindow.ActionButton("Standard",()=>ApplyTheme(null)));body.Controls.Add(row);}
+    void ThemeTools(){var row=new FlowLayoutPanel{Height=38,WrapContents=false,Margin=new Padding(0,4,0,8)};row.Controls.Add(DashboardWindow.ActionButton("Importieren …",ImportTheme));row.Controls.Add(DashboardWindow.ActionButton("Exportieren …",ExportTheme));var manage=DashboardWindow.ActionButton("Verwalten …",ManageThemes);manage.Enabled=prefs.CustomTheme!=null||prefs.ImportedThemes.Count>0;row.Controls.Add(manage);row.Controls.Add(DashboardWindow.ActionButton("Standard",()=>ApplyTheme(null)));body.Controls.Add(row);}
     void ApplyTheme(ThemePackage? package){try{ThemeLibrary.Change(prefs,()=>{if(package==null)prefs.ThemeId="default";else ThemeLibrary.Import(prefs,package);},Save);ShowTab(3);}catch{owner.ApplyPreferences();throw;}}
     void ImportTheme(){
         using var dialog=new OpenFileDialog{Filter="simplebanking Theme|*.cfg;*.zip",Title="Theme importieren"};if(dialog.ShowDialog(this)!=DialogResult.OK)return;
