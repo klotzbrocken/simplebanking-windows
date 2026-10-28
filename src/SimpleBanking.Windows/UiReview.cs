@@ -68,6 +68,16 @@ internal static class UiReview
         } finally { Directory.Delete(vaultFolder, true); }
         var reportData=DemoData.Create(); MonthlyReport.Write(Path.Combine(folder,"simple.report-demo.pdf"),reportData.Accounts[0],reportData.Entries,reportData.Entries.Max(e=>e.Date));
         using var main = new MainWindow(true);
+        ThemeLibrary.Import(main.Preferences,new(new(){["id"]="fixture",["name"]="Mein Theme",["accent"]="#245B99"},new()));
+        ThemeLibrary.Import(main.Preferences,new(new(){["id"]="fixture",["name"]="Mein Theme",["accent"]="#287B51"},new()));
+        main.Preferences.LastTab=3;
+        using(var settings=new SettingsWindow(main)){
+            Capture(settings,"theme-library-settings");
+            using var timer=new System.Windows.Forms.Timer{Interval=80};bool reviewed=false;
+            timer.Tick+=(_,_)=>{var dialog=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text=="Eigene Themes");if(dialog==null)return;timer.Stop();Capture(dialog,"theme-library-manager");dialog.Show();var list=Descendants(dialog).OfType<ListBox>().Single();if(list.Items.Count!=2)throw new InvalidOperationException("Theme collection lost an import.");list.SelectedIndex=0;Descendants(dialog).OfType<Button>().Single(b=>b.Text=="Verwenden").PerformClick();reviewed=true;};timer.Start();
+            typeof(SettingsWindow).GetMethod("ManageThemes",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(settings,null);if(!reviewed)throw new InvalidOperationException("Theme manager review missing.");
+        }
+        main.Preferences.ImportedThemes.Clear();main.Preferences.ThemeId="default";main.Preferences.LastTab=0;main.ApplyPreferences();
         using(var todo=new MainWindow.TodoSettingsWindow(main)){
             Capture(todo,"microsoft-todo-demo");todo.Show();
             if(Descendants(todo).OfType<Button>().Single(b=>b.Text=="Mit Microsoft verbinden").Enabled)throw new InvalidOperationException("Demo allowed Microsoft sign-in.");todo.Hide();

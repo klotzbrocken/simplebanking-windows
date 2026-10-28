@@ -11,7 +11,7 @@ internal sealed class ThemePalette
     internal static Dictionary<string,string> Parse(string source){var result=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);foreach(string line in source.Split('\n')){string clean=line.Trim();if(clean.Length==0||clean.StartsWith('#'))continue;int index=clean.IndexOf('=');if(index>0)result[clean[..index].Trim()]=clean[(index+1)..].Trim();}if(!result.ContainsKey("id")||!result.ContainsKey("name"))throw new InvalidDataException("Theme-ID oder Name fehlt.");return result;}
     ThemePalette(Dictionary<string,string> values,bool dark){this.values=values;this.dark=dark;}
     internal static ThemePalette For(AppPreferences preferences){
-        if(preferences.ThemeId=="custom"&&preferences.CustomTheme is {} custom){try{return new(ThemeFiles.Read(ThemeFiles.Write(custom)),preferences.DarkAppearance){images=preferences.CustomThemeImages};}catch(InvalidDataException){}}
+        if(ThemeLibrary.Current(preferences) is {} package){try{return new(ThemeFiles.Read(ThemeFiles.Write(package.Values)),preferences.DarkAppearance){images=package.Images};}catch(InvalidDataException){}}
         return new(BuiltIns.GetValueOrDefault(preferences.ThemeId)??BuiltIns["default"],preferences.DarkAppearance);
     }
     internal string Id=>values["id"];

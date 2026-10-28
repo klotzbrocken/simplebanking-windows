@@ -505,6 +505,7 @@ internal static class SelfTests
         PriorityTwoTests.Register(Test);
         DesktopRegressionTests.Register(Test);
         TodoTests.Register(Test);
+        ThemeLibraryTests.Register(Test);
         var report = JsonSerializer.Serialize(new { passed = results.Count - failed, failed, tests = results }, new JsonSerializerOptions { WriteIndented = true });
         var index = Array.IndexOf(args, "--report");
         if (index >= 0 && index + 1 < args.Length) File.WriteAllText(args[index + 1], report);

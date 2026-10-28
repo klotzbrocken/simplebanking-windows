@@ -6,6 +6,7 @@ internal sealed class AppPreferences
     public bool RemoteMerchantLogos {get;set;}=true;
     public bool AutomationEnabled {get;set;}
     public string ThemeId {get;set;}="default";
+    public Dictionary<string,ThemePackage> ImportedThemes {get;set;}=new();
     public Dictionary<string,string>? CustomTheme {get;set;}
     public Dictionary<string,byte[]>? CustomThemeImages {get;set;}
     public bool DarkAppearance {get;set;}
@@ -179,7 +180,7 @@ internal sealed partial class SettingsWindow : Form
                 Threshold("Sehr wohlhabend", prefs.VeryGood, v => prefs.VeryGood = Math.Max(prefs.Medium+1,v));
                 break;
             case 3:
-                TextLine("Darstellung",true);var themes=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,DisplayMember="Value",ValueMember="Key"};var choices=ThemePalette.BuiltIns.Select(p=>new KeyValuePair<string,string>(p.Key,p.Value["name"])).ToList();if(prefs.CustomTheme is {} custom)choices.Add(new("custom",custom.GetValueOrDefault("name")??"Importiertes Theme"));themes.Items.AddRange(choices.Cast<object>().ToArray());themes.SelectedIndex=Math.Max(0,choices.FindIndex(c=>c.Key==prefs.ThemeId));themes.SelectionChangeCommitted+=(_,_)=>{if(themes.SelectedItem is KeyValuePair<string,string> choice){prefs.ThemeId=choice.Key;Save();}};body.Controls.Add(themes);ThemeTools();
+                TextLine("Darstellung",true);var themes=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,DisplayMember="Value",ValueMember="Key"};var choices=ThemeLibrary.Choices(prefs);themes.Items.AddRange(choices.Cast<object>().ToArray());themes.SelectedIndex=Math.Max(0,choices.FindIndex(c=>c.Key==prefs.ThemeId));themes.SelectionChangeCommitted+=(_,_)=>{if(themes.SelectedItem is KeyValuePair<string,string> choice){ThemeLibrary.Change(prefs,()=>prefs.ThemeId=choice.Key,Save);}};body.Controls.Add(themes);ThemeTools();
                 Toggle("Dunkle Darstellung",prefs.DarkAppearance,v=>prefs.DarkAppearance=v,"Gilt für Konten, Auswertungen, Einstellungen und Dialoge.");
                 Toggle("Händlerlogos aus dem Internet",prefs.RemoteMerchantLogos,v=>prefs.RemoteMerchantLogos=v,"Bekannte Händlerdomains an Logo.dev senden. Lokale Logos zuerst; 30 Tage Cache, höchstens drei neue Abrufe pro Tag wie auf dem Mac.");
                 TextLine("Kontostand-Anzeige", true);
