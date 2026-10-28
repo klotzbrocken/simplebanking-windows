@@ -15,7 +15,9 @@ internal sealed class AccountTile : Button
         var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; base.OnPaintBackground(e);
         if (!Active) { using var fill = new SolidBrush(Color.FromArgb(13, Color.Black)); g.FillEllipse(fill, ClientRectangle); }
         int size = Active ? 20 : 16, x = (Width - size) / 2, y = (Height - size) / 2;
-        if (Logo != null) {
+        if (ThemeStyling.Current.Lofi) {
+            BtxMosaic.Draw(g,new Rectangle(x,y,size,size),"Sonstiges");
+        } else if (Logo != null && ThemeStyling.Current.BankLogos) {
             using var attrs = new ImageAttributes(); attrs.SetColorMatrix(new ColorMatrix { Matrix33 = Active ? 1f : .42f });
             ArtworkDrawing.Draw(g,Logo,new Rectangle(x,y,size,size),Active?1f:.42f);
         } else {

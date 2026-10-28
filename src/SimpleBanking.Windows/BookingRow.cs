@@ -32,7 +32,7 @@ internal sealed class BookingRow : Control
             ArtworkDrawing.Draw(g,logo,new Rectangle(28,center-16,32,32),1f);
         }
         else if(theme.CategoryIcons)DrawCategory(g,new Point(34,center-10),entry.Category,theme.Secondary);
-        else {using var mosaic=new SolidBrush(theme.Accent);for(int i=0;i<6;i++)if((entry.Merchant.Sum(c=>(int)c)&(1<<i))!=0)g.FillRectangle(mosaic,30+i%2*9,center-10+i/2*7,7,5);}
+        else BtxMosaic.Draw(g,new Rectangle(30,center-12,24,24),entry.Category);
         using var main=theme.Font(14,true);
         using var small=theme.Font(12);
         using var body=theme.Font(11);
@@ -47,6 +47,7 @@ internal sealed class BookingRow : Control
         TextRenderer.DrawText(g,theme.Text(entry.Merchant),main,new Rectangle(70,nameY,nameWidth,20),Tone(theme.Ink),flags);
         if(categories) TextRenderer.DrawText(g,entry.Category,small,new Rectangle(70,center+2,Math.Max(10,nameWidth),20),Tone(theme.Secondary),flags);
         if(wide) TextRenderer.DrawText(g,entry.Purpose,body,new Rectangle(70+nameWidth+8,center-10,Math.Max(1,textRight-68-nameWidth),20),Tone(theme.Secondary),flags);
+        if(theme.DottedLeaders&&!wide){int start=70+Math.Min(nameWidth,TextRenderer.MeasureText(theme.Text(entry.Merchant),main).Width)+5;if(start<amountLeft-8){using var leader=new Pen(theme.Secondary){DashStyle=DashStyle.Dot};g.DrawLine(leader,start,center+4,amountLeft-8,center+4);}}
         if(entry.Note.Length>0) { using var pen=new Pen(Tone(Color.Gray),1); g.DrawLine(pen,amountLeft-18,center+3,amountLeft-11,center-4); g.DrawLine(pen,amountLeft-19,center+5,amountLeft-12,center+5); }
         TextRenderer.DrawText(g,amount,main,new Rectangle(amountLeft,pendingPill?center-20:center-10,amountWidth,20),Tone(entry.Amount>0?theme.Positive:theme.IsDefault?theme.Ink:theme.Negative),flags|TextFormatFlags.Right);
         if(pendingPill) { int width=TextRenderer.MeasureText("Vorgemerkt",small).Width+12; Pill(g,"Vorgemerkt",small,new Point(Width-14-width,center+2),width,Tone(Color.FromArgb(174,92,0)),Tone(Color.FromArgb(255,239,213))); }

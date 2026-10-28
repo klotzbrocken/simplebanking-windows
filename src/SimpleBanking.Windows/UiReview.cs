@@ -5,7 +5,7 @@ internal static class UiReview
     {
         Directory.CreateDirectory(folder);
         void Capture(Form form, string name) {
-            form.Show(); form.PerformLayout(); Application.DoEvents();
+            form.Show(); if(form is not ThemePreview)ThemeStyling.Apply(form);form.PerformLayout(); Application.DoEvents();
             foreach(var card in Descendants(form).OfType<BalanceCard>())card.StopRipple();
             using var bitmap = new Bitmap(form.Width, form.Height);
             form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, form.Size));
@@ -68,6 +68,20 @@ internal static class UiReview
         } finally { Directory.Delete(vaultFolder, true); }
         var reportData=DemoData.Create(); MonthlyReport.Write(Path.Combine(folder,"simple.report-demo.pdf"),reportData.Accounts[0],reportData.Entries,reportData.Entries.Max(e=>e.Date));
         using var main = new MainWindow(true);
+        ThemeLibrary.Import(main.Preferences,new(new(){["id"]="fixture",["name"]="Mein Theme",["accent"]="#245B99"},new()));
+        ThemeLibrary.Import(main.Preferences,new(new(){["id"]="fixture",["name"]="Mein Theme",["accent"]="#287B51"},new()));
+        main.Preferences.LastTab=3;
+        using(var themeSettings=new SettingsWindow(main)){
+            Capture(themeSettings,"theme-library-settings");
+            using var timer=new System.Windows.Forms.Timer{Interval=80};bool reviewed=false;
+            timer.Tick+=(_,_)=>{var dialog=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text=="Eigene Themes");if(dialog==null)return;timer.Stop();Capture(dialog,"theme-library-manager");dialog.Show();var list=Descendants(dialog).OfType<ListBox>().Single();if(list.Items.Count!=2)throw new InvalidOperationException("Theme collection lost an import.");list.SelectedIndex=0;Descendants(dialog).OfType<Button>().Single(b=>b.Text=="Verwenden").PerformClick();reviewed=true;};timer.Start();
+            typeof(SettingsWindow).GetMethod("ManageThemes",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(themeSettings,null);if(!reviewed)throw new InvalidOperationException("Theme manager review missing.");
+        }
+        main.Preferences.ImportedThemes.Clear();main.Preferences.ThemeId="default";main.Preferences.LastTab=0;main.ApplyPreferences();
+        using(var todo=new MainWindow.TodoSettingsWindow(main)){
+            Capture(todo,"microsoft-todo-demo");todo.Show();
+            if(Descendants(todo).OfType<Button>().Single(b=>b.Text=="Mit Microsoft verbinden").Enabled)throw new InvalidOperationException("Demo allowed Microsoft sign-in.");todo.Hide();
+        }
         if (main.CurrentBalance != 3284.52m) throw new InvalidOperationException("Initial account selection is missing.");
         main.SelectAllAccounts();
         if (main.CurrentBalance != main.FlyoutAccounts().Sum(a => a.Balance)) throw new InvalidOperationException("Unified account selection failed.");
@@ -82,14 +96,16 @@ internal static class UiReview
 
         using(var chatTimer=new System.Windows.Forms.Timer{Interval=80}) {
             bool reviewed=false;
-            chatTimer.Tick+=(_,_)=>{
+            chatTimer.Tick+=async(_,_)=>{
                 var chat=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text.StartsWith("AI-Assistent ·"));if(chat==null)return;chatTimer.Stop();
                 var input=Descendants(chat).OfType<TextBox>().Single(t=>!t.ReadOnly);
                 var send=Descendants(chat).OfType<Button>().Single(b=>b.Text=="Fragen");
                 input.Text="Wie hoch sind meine Ausgaben?";send.PerformClick();
+                for(int n=0;!send.Enabled&&n<200;n++)await Task.Delay(25);
                 input.Text="Und meine Einnahmen?";send.PerformClick();
+                for(int n=0;!send.Enabled&&n<200;n++)await Task.Delay(25);
                 var transcript=Descendants(chat).OfType<TextBox>().Single(t=>t.ReadOnly).Text;
-                if(!transcript.Contains("Wie hoch")||!transcript.Contains("Und meine")||!transcript.Contains("Lokale Demo-Zusammenfassung"))throw new InvalidOperationException("Demo conversation lost its history.");
+                if(!transcript.Contains("Wie hoch")||!transcript.Contains("Und meine")||!transcript.Contains("Lokale Demo-Auswertung"))throw new InvalidOperationException("Demo conversation lost its history.");
                 using var bitmap=new Bitmap(chat.Width,chat.Height);chat.DrawToBitmap(bitmap,new Rectangle(Point.Empty,chat.Size));bitmap.Save(Path.Combine(folder,"ai-conversation-demo.png"));reviewed=true;chat.Close();
             };
             chatTimer.Start();main.OpenAiChat();if(!reviewed)throw new InvalidOperationException("AI conversation review missing.");
@@ -140,6 +156,11 @@ internal static class UiReview
         flyout.SetPinned(true);flyout.Show();Descendants(flyout).OfType<Button>().Single(b=>b.AccessibleName=="Widget schließen").PerformClick();
         if(flyout.Visible||flyout.IsPinned||main.Preferences.WidgetEnabled)throw new InvalidOperationException("Widget close did not clear its persistent state.");
         flyout.ToggleQuickSend();Capture(flyout,"quick-send");flyout.Show();
+        flyout.SetPinned(true);var workArea=Screen.FromControl(flyout).WorkingArea;flyout.Location=new Point(workArea.Right-flyout.Width,workArea.Bottom-178);flyout.RefreshCards();
+        if(!workArea.Contains(flyout.Bounds))throw new InvalidOperationException("Expanded widget escaped the work area.");
+        flyout.Location=new Point(30000,30000);flyout.FitWidgetToDisplay();
+        if(!Screen.AllScreens.Any(s=>s.WorkingArea.Contains(flyout.Bounds)))throw new InvalidOperationException("Disconnected-monitor widget did not return to a visible display.");
+        flyout.SetPinned(false);
         var quick=Descendants(flyout).OfType<QuickSendPanel>().Single();
         Descendants(quick).OfType<Button>().Single(b=>b.AccessibleName=="Vorlage Gemeinsames Essen").PerformClick();
         if(!Descendants(quick).OfType<Button>().Single(b=>b.Text=="Prüfen").Enabled)throw new InvalidOperationException("Quick Send favorite did not fill a valid draft.");
@@ -197,7 +218,7 @@ internal static class UiReview
         foreach(string themeId in new[]{"sunrise","gameboy","btx"}){main.Preferences.ThemeId=themeId;main.ApplyPreferences();Capture(main,"theme-"+themeId);flyout.RefreshCards();Capture(flyout,"theme-flyout-"+themeId);if(themeId=="btx"){flyout.Show();Descendants(flyout).OfType<BalanceCard>().Single().StartRipple();if(Descendants(flyout).OfType<BalanceCard>().Single().RippleRunning)throw new InvalidOperationException("BTX started a disabled ripple.");flyout.Hide();}}
         main.Preferences.ThemeId="default";main.Preferences.DarkAppearance=true;main.ApplyPreferences();Capture(main,"theme-dark");main.Preferences.DarkAppearance=false;main.ApplyPreferences();
         using(var dashboard=new DashboardWindow(main)) {
-            for(int tab=0;tab<5;tab++){dashboard.ShowTab(tab);Capture(dashboard,"dashboard-"+tab);}dashboard.ShowSubscriptionMode("Statistik");Capture(dashboard,"subscriptions-statistics");dashboard.ShowSubscriptionMode("Kalender");Capture(dashboard,"subscriptions-calendar");
+            for(int tab=0;tab<6;tab++){dashboard.ShowTab(tab);Capture(dashboard,"dashboard-"+tab);}dashboard.ShowSubscriptionMode("Statistik");Capture(dashboard,"subscriptions-statistics");dashboard.ShowSubscriptionMode("Kalender");Capture(dashboard,"subscriptions-calendar");
         }
         using(var assistant=new RuleAssistant(main,main.AnalysisSnapshot()))Capture(assistant,"rule-assistant");
         void Modal(Action open,string title,string filename){using var timer=new System.Windows.Forms.Timer{Interval=100};bool captured=false;timer.Tick+=(_,_)=>{var form=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text==title);if(form==null)return;timer.Stop();Capture(form,filename);captured=true;form.Close();};timer.Start();open();timer.Stop();if(!captured)throw new InvalidOperationException("Modal review not captured: "+title);}
@@ -208,6 +229,26 @@ internal static class UiReview
         Modal(main.OpenMerchantRules,"Händler-Regeln","merchant-rules");
         Modal(main.OpenRoundups,"Aufrunden · Spartopf","roundups");
         Modal(main.OpenAiChat,"AI-Assistent · DEMO","ai-demo");
+        using(var updater=new UpdateWindow(true)){Capture(updater,"p2-updater");updater.Show();Descendants(updater).OfType<Button>().Single(b=>b.Text=="Nach Updates suchen").PerformClick();Capture(updater,"p2-updater-demo");}
+        using(var clientEditor=new AutomationClientEditor(fixtureData.Accounts))Capture(clientEditor,"p2-mcp-client-editor");
+        var automation=AutomationAccess.Create("Demo-Assistent",["accounts","drafts"],[fixtureData.Accounts[0].Id],90);fixtureData.AutomationClients.Add(automation.Client);
+        Modal(main.ManageAutomationClients,"CLI / MCP · Clients","p2-mcp-clients");
+        main.Preferences.AutomationEnabled=true;int oldDrafts=fixtureData.Drafts.Count,oldPayments=fixtureData.Payments.Count;
+        var draftArgs=new System.Text.Json.Nodes.JsonObject{["account_id"]=fixtureData.Accounts[0].Id,["recipient"]="Demo-Empfänger",["iban"]="DE89370400440532013000",["amount"]=12.34m,["purpose"]="Synthetischer MCP-Test",["request_id"]="review"};
+        var request=new System.Text.Json.Nodes.JsonObject{["name"]="prepare_transfer",["token"]=automation.Token,["arguments"]=draftArgs};
+        main.DispatchAutomation(request);main.DispatchAutomation(request);
+        if(fixtureData.AutomationDrafts.Count!=1||fixtureData.Drafts.Count!=oldDrafts||fixtureData.Payments.Count!=oldPayments)throw new InvalidOperationException("MCP request executed a payment or created duplicate drafts.");
+        main.Preferences.AutomationEnabled=false;bool denied=false;try{main.DispatchAutomation(request);}catch(InvalidOperationException){denied=true;}if(!denied)throw new InvalidOperationException("Disabled automation accepted a request.");
+        using(var reviewTimer=new System.Windows.Forms.Timer{Interval=80}){
+            reviewTimer.Tick+=(_,_)=>{
+                var list=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text=="MCP · Überweisungsentwürfe prüfen");if(list==null)return;reviewTimer.Stop();
+                Capture(list,"p2-mcp-drafts");list.Show();
+                using var approveTimer=new System.Windows.Forms.Timer{Interval=80};approveTimer.Tick+=(_,_)=>{
+                    var preview=Application.OpenForms.Cast<Form>().FirstOrDefault(f=>f.Text=="Entwurf von Demo-Assistent");if(preview==null)return;approveTimer.Stop();Capture(preview,"p2-mcp-draft-approval");preview.Show();Descendants(preview).OfType<Button>().Single(b=>b.Text=="Als Entwurf freigeben").PerformClick();
+                };approveTimer.Start();Descendants(list).OfType<Button>().Single(b=>b.Text=="Ausgewählten Entwurf prüfen").PerformClick();list.Close();
+            };reviewTimer.Start();main.ReviewAutomationDrafts();
+        }
+        if(fixtureData.Drafts.Count!=oldDrafts+1||fixtureData.Payments.Count!=oldPayments||fixtureData.AutomationDrafts.Single().State!="Als Entwurf freigegeben")throw new InvalidOperationException("Explicit MCP draft approval failed or executed a payment.");
         using(var templateEditor=new PaymentTemplateEditor(DemoData.Create().Accounts[0].Id,DemoData.Create().PaymentTemplates[0],0)){Capture(templateEditor,"template-editor");templateEditor.Show();Descendants(templateEditor).OfType<TextBox>().Single(t=>t.AccessibleName=="Symbol").Text="🏠";Descendants(templateEditor).OfType<Button>().Single(t=>t.Text=="Speichern").PerformClick();if(templateEditor.Result?.Symbol!="🏠"||templateEditor.Result.Draft.AccountId!=DemoData.Create().Accounts[0].Id)throw new InvalidOperationException("Template edit lost symbol or source account.");}
         using(var transfer=new TransferWindow(DemoData.Create().Accounts[0],DemoData.Create().PaymentTemplates[0].Draft,true)){
             Capture(transfer,"transfer-demo");transfer.Show();Descendants(transfer).OfType<Button>().Single(b=>b.Text=="Demo-Versand prüfen").PerformClick();if(!transfer.SendRequested||transfer.Draft?.Amount!=25)throw new InvalidOperationException("Demo transfer review did not preserve draft.");transfer.Hide();
@@ -261,6 +302,19 @@ internal static class UiReview
             using var themed=new MainWindow(true);themed.Preferences.ThemeId="custom";themed.Preferences.CustomTheme=package.Values;themed.Preferences.CustomThemeImages=package.Images;themed.ApplyPreferences();Capture(themed,"theme-package-transactions");
             themed.Preferences.ThemeId="default";themed.ApplyPreferences();Capture(themed,"theme-package-reset");
         }
+        foreach(var themeId in new[]{"default","btx"}){
+            main.Preferences.ThemeId=themeId;main.Preferences.DarkAppearance=true;main.ApplyPreferences();
+            using var themedSettings=new SettingsWindow(main);themedSettings.ShowReviewTab(3);Capture(themedSettings,"p1-settings-"+themeId);
+            using var themedDashboard=new DashboardWindow(main);themedDashboard.ShowFixedCosts();Capture(themedDashboard,"p1-fixed-"+themeId);themedDashboard.ShowTab(3);Capture(themedDashboard,"p1-age-"+themeId);themedDashboard.ShowTab(0);Capture(themedDashboard,"p1-mmi-"+themeId);
+            using var rules=new RuleAssistant(main,main.AnalysisSnapshot());Capture(rules,"p1-rules-"+themeId);
+            using var themedDetails=new TransactionDetails(DemoData.Create().Entries[0],false,_=>{});Capture(themedDetails,"p1-details-"+themeId);
+        }
+        main.Preferences.ThemeId="btx";main.Preferences.BtxCrtEnabled=true;main.ApplyPreferences();main.Show();ThemeStyling.Refresh();Application.DoEvents();
+        var crt=main.OwnedForms.OfType<BtxCrtOverlay>().Single();if(!crt.Visible)throw new InvalidOperationException("BTX overlay did not open.");
+        main.Hide();Application.DoEvents();if(crt.Visible)throw new InvalidOperationException("BTX overlay remained visible after hiding its owner.");
+        main.Show();Application.DoEvents();if(!crt.Visible)throw new InvalidOperationException("BTX overlay did not follow its owner.");
+        main.Preferences.ThemeId="default";main.Preferences.BtxCrtEnabled=false;main.Preferences.DarkAppearance=false;main.ApplyPreferences();
+        if(!crt.IsDisposed)throw new InvalidOperationException("BTX overlay survived switching themes.");main.Hide();
         return 0;
     }
 }

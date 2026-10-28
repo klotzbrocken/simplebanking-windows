@@ -10,6 +10,7 @@ internal static class Program
         if(args.Contains("--mcp"))return LocalAutomation.RunMcp(args.Contains("--demo"));
         if(args.Contains("--cli"))return LocalAutomation.RunCli(args);
         if (args.Contains("--self-test")) return SelfTests.Run(args);
+        if(args.Length==2&&args[0]=="--benchmark-vault"){try{return DesktopRegressionTests.Benchmark(args[1]);}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
         ApplicationConfiguration.Initialize();
         if(args.Contains("--test-tray-lifecycle"))return TrayLifecycleTest.Run();
         if (args.Length == 2 && args[0] == "--render-ui") return UiReview.Render(args[1]);
@@ -36,6 +37,7 @@ internal sealed class TrayContext : ApplicationContext
     readonly System.Windows.Forms.Timer activationTimer;
     readonly System.Windows.Forms.Timer reminderTimer=new(){Interval=30000};
     int shownReminders;
+    bool bankApprovalNotification;
     long lastDoubleClick;
     bool exiting;
     readonly System.Windows.Forms.Timer clickTimer=new() {Interval=SystemInformation.DoubleClickTime};
@@ -53,6 +55,7 @@ internal sealed class TrayContext : ApplicationContext
         menu.Items.Add("Beenden", null, (_, _) => ExitThread());
         tray = new NotifyIcon { Icon = trayIcon, Text = "simplebanking · Konten", ContextMenuStrip = menu, Visible = false };
         window.BalanceChanged+=UpdateTrayIcon;UpdateTrayIcon();
+        window.BankApprovalNeeded+=bank=>{bankApprovalNotification=true;tray.ShowBalloonTip(6000,bank+": neue Freigabe nötig","Automatischer Abruf pausiert. Öffne simplebanking und wähle Aktualisieren, um die Bankfreigabe zu starten.",ToolTipIcon.Info);};
         clickTimer.Tick+=(_,_)=>{clickTimer.Stop();if(window.IsLocked)window.OpenMainWindow();else flyout.ShowAtTray();};
         tray.MouseClick += (_, e) => { if(e.Button==MouseButtons.Left && Environment.TickCount64-lastDoubleClick>SystemInformation.DoubleClickTime) {clickTimer.Stop();clickTimer.Start();} };
         tray.MouseDoubleClick+=(_,e)=>{if(e.Button==MouseButtons.Left){lastDoubleClick=Environment.TickCount64;clickTimer.Stop();if(!flyout.IsPinned)flyout.Hide();Open();}};
@@ -61,7 +64,7 @@ internal sealed class TrayContext : ApplicationContext
         // Explorer can create/recreate the notification area after the app starts.
         // Register twice so the icon is present even when the initial shell callback is missed.
         tray.Visible = true;
-        reminderTimer.Tick+=(_,_)=>{int count=window.DueReminderCount();if(count>shownReminders&&!demo){tray.ShowBalloonTip(5000,"simplebanking",count+" fällige Erinnerungen",ToolTipIcon.Info);}shownReminders=count;};reminderTimer.Start();tray.BalloonTipClicked+=(_,_)=>window.OpenAttentionInbox();
+        reminderTimer.Tick+=(_,_)=>{int count=window.DueReminderCount();if(count>shownReminders&&!demo){bankApprovalNotification=false;tray.ShowBalloonTip(5000,"simplebanking",count+" fällige Erinnerungen",ToolTipIcon.Info);}shownReminders=count;};reminderTimer.Start();tray.BalloonTipClicked+=(_,_)=>{if(bankApprovalNotification)Open();else window.OpenAttentionInbox();};
         trayRepairTimer = new() { Interval = 1500 };
         trayRepairTimer.Tick += (_, _) => { tray.Visible = false; tray.Visible = true; trayRepairTimer.Stop(); };
         trayRepairTimer.Start();
@@ -122,8 +125,9 @@ internal sealed partial class MainWindow : Form
     public MainWindow(bool demo, string? storageDirectory = null,IHelloKeys? helloKeys=null)
     {
         this.demo = demo;this.helloKeys=helloKeys;
+        AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);
         Preferences=demo||storageDirectory!=null?new AppPreferences{Ephemeral=true}:AppPreferences.Load();
-        Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>Icon?.Dispose();
+        Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>{Icon?.Dispose();aiCategoryCancellation?.Cancel();};
         Paint+=(_,e)=>{if(Theme.Border is {} border){using var pen=new Pen(border,3);e.Graphics.DrawRectangle(pen,1,1,ClientSize.Width-3,ClientSize.Height-3);}};
         store = new EncryptedStore(storageDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SimplebankingWindows", demo ? "Demo" : "Live"));
         Text = "simplebanking" + (demo ? " · DEMO" : ""); FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=true;ClientSize = new Size(360, 688);
@@ -171,7 +175,7 @@ internal sealed partial class MainWindow : Form
         BalanceChanged+=()=>{footerLeft.Enabled=!IsLocked;inboxButton.Badge=AttentionCount();inboxButton.Invalidate();sendButton.Enabled=!IsLocked&&SelectedAccount?.Currency=="EUR";};Disposed+=(_,_)=>more.Dispose();toolbar.Controls.Add(filterPills);
         var resetFilters=new LinkLabel{Text="Filter zurücksetzen",AutoSize=true,Margin=new Padding(0,7,0,0),LinkColor=ExportDesign.Accent,LinkBehavior=LinkBehavior.HoverUnderline};resetFilters.LinkClicked+=(_,_)=>{bookingFilters.Clear();RefreshFilterPills();RefreshEntries();};filterSummary.Controls.Add(filterResult);filterSummary.Controls.Add(resetFilters);toolbar.Controls.Add(filterSummary);
         BalanceChanged += () => Invalidate(true);
-        transactionList.OpenEntry += OpenEntryDetail;transactionList.RenameMerchant+=RenameMerchant;transactionList.ResetMerchant+=entry=>SetMerchantOverride(entry,null);
+        transactionList.OpenEntry += OpenEntryDetail;transactionList.RenameMerchant+=RenameMerchant;transactionList.CreateMerchantRule+=SaveMerchantRuleFromEntry;transactionList.ResetMerchant+=entry=>SetMerchantOverride(entry,null);
         transactionList.ToggleRead += entry => {
             var index = data.Entries.FindIndex(e => e.Id == entry.Id && e.AccountId == entry.AccountId);
             if (index < 0 || !Unlocked) return;
@@ -183,11 +187,12 @@ internal sealed partial class MainWindow : Form
         accounts.SelectedIndexChanged += (_, _) => { unifiedAccounts = false; RefreshEntries(); }; search.TextChanged += (_, _) => RefreshEntries();
         if (demo) { data = DemoData.Create(); password = null; Populate(); status.Text = "DEMO · Beispieldaten"; }
         else { status.Text = "Gesperrt · Zum Entsperren auf … klicken"; balance.Text = "Willkommen"; }
-        refreshTimer.Tick += (_, _) => { if (Unlocked && !bankBusy) RefreshBank(); };
+        refreshTimer.Tick += (_, _) => { if (Unlocked && !bankBusy) RefreshBankInBackground(); };
         Disposed += (_, _) => {refreshTimer.Dispose();logoCancellation?.Cancel();};
         Disposed += (_, _) => themeWallpaper?.Dispose();
         ApplyPreferences();
         MinimumSize=MaximumSize=Size;
+        InitializeTodo();
         if(storageDirectory==null&&!demo){InitializeWindowsIntegration();InitializeAutomation();}
     }
     static Button Button(string text, Action action)
@@ -231,8 +236,9 @@ internal sealed partial class MainWindow : Form
     internal void UnlockFromSettings() => Unlock();
     internal void ApplyPreferences()
     {
-        var theme=Theme;themeWallpaper?.Dispose();themeWallpaper=theme.Image("wallpaper");BackColor=theme.Surface;ForeColor=theme.Ink;Padding=theme.Border!=null?new Padding(3):Padding.Empty;
-        void Style(Control root){foreach(Control control in root.Controls){if(control is not BalanceCard){control.BackColor=control is Panel or UserControl or HeaderIcon or FilterPill or Label or BookingRow or DateHeading?Color.Transparent:theme.Surface;control.ForeColor=theme.Ink;if(control is HeaderIcon icon){icon.Tint=theme.Secondary;icon.TextMode=theme.Lofi;}}Style(control);}}
+        ThemeStyling.Use(Preferences);
+        var theme=Theme;themeWallpaper?.Dispose();themeWallpaper=theme.Image(ClientSize.Width/(DeviceDpi/96f)>=594?"wallpaperWide":"wallpaper")??theme.Image("wallpaper");BackColor=theme.Surface;ForeColor=theme.Ink;Padding=theme.Border!=null?new Padding(3):Padding.Empty;
+        void Style(Control root){foreach(Control control in root.Controls){if(control is not BalanceCard){control.BackColor=control is Panel or UserControl or HeaderIcon or FilterPill or Label or BookingRow or DateHeading?Color.Transparent:theme.Surface;control.ForeColor=theme.Ink;if(control is HeaderIcon icon){icon.Tint=theme.Secondary;icon.TextMode=!theme.GlyphControls;}}Style(control);}}
         Style(this);
         recurringCache.Clear();
         ConfigureWindowsIntegration();
@@ -242,7 +248,7 @@ internal sealed partial class MainWindow : Form
         RefreshEntries();
     }
     internal void OpenMainWindow() {
-        Show(); WindowState=FormWindowState.Normal;Activate();
+        Show(); WindowState=FormWindowState.Normal;FitWindowToDisplay();Activate();
         if(IsLocked && !unlockQueued && !unlocking) {
             unlockQueued=true;BeginInvoke(new Action(()=>{unlockQueued=false;if(IsLocked&&!unlocking)Unlock();}));
         }
@@ -305,7 +311,7 @@ internal sealed partial class MainWindow : Form
                 string helloPassword=Hello.Unlock(Handle);
                 if(epoch!=Volatile.Read(ref securityEpoch))return;
                 UnlockVault(helloPassword);status.Text="";
-                if(Preferences.LoadTransactionsOnStart)RefreshBank();
+                if(Preferences.LoadTransactionsOnStart)RefreshBankInBackground();
                 return;
             } catch(Exception error) when(error is System.Security.Cryptography.CryptographicException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException) {
                 if(epoch!=Volatile.Read(ref securityEpoch))return;
@@ -334,7 +340,7 @@ internal sealed partial class MainWindow : Form
             }catch(Exception e) when(e is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException){MessageBox.Show(this,"Der Tresor konnte nicht zurückgesetzt werden. Die Einrichtung wurde nicht geändert.");}
             return;
         }
-        if(result==DialogResult.OK&&epoch==Volatile.Read(ref securityEpoch)&&Unlocked){status.Text="";if(Preferences.LoadTransactionsOnStart)RefreshBank();}
+        if(result==DialogResult.OK&&epoch==Volatile.Read(ref securityEpoch)&&Unlocked){status.Text="";if(Preferences.LoadTransactionsOnStart)RefreshBankInBackground();}
     }
 
     internal void RunFirstSetup()
@@ -352,23 +358,26 @@ internal sealed partial class MainWindow : Form
     public void Lock()
     {
         Interlocked.Increment(ref securityEpoch);
+        aiCategoryCancellation?.Cancel();aiCategoryQueue.Clear();
+        todoCancellation?.Cancel();
         logoCancellation?.Cancel();
         if (bankBusy) { MessageBox.Show(this, "Bitte den laufenden Bankvorgang zuerst abschließen."); return; }
         if (demo) { Hide(); return; }
         foreach(var form in OwnedForms.ToArray()){form.Close();if(!form.IsDisposed&&form is TransactionDetails)form.Dispose();}
         bankReadAccess.Clear();password = null; data = new(); Populate(); balance.Text = "Gesperrt"; status.Text = "Gesperrt";
     }
-    void Save() { if (!demo && password != null) store.Save(data, password); }
+    void Save() { if (!demo && password != null) store.Save(data, password); ScheduleTodo(); }
     void Transfer() => EditTransfer(SelectedAccount is {} account?data.Drafts.LastOrDefault(d=>d.AccountId==account.Id):null);
     void OpenEntryDetail(Entry entry)
     {
+        var detailSnapshot=entry;
         using var detail = new TransactionDetails(entry, BalancesHidden, changed => {
             var index = data.Entries.FindIndex(e => e.Id == changed.Id && e.AccountId == changed.AccountId);
             if (index < 0 || !Unlocked) return;
             var previous=data.Entries[index];
-            data.Entries[index] = changed with {CategoryManual=changed.Category!=entry.Category || changed.CategoryManual};
-            try{Save();}catch{data.Entries[index]=previous;throw;}RefreshEntries();
-        }, SetMerchantLogo);
+            data.Entries[index] = TodoSync.MergeDetail(previous,changed,detailSnapshot) with {CategoryManual=changed.Category!=entry.Category || changed.CategoryManual};
+            try{Save();}catch{data.Entries[index]=previous;throw;}detailSnapshot=changed;RefreshEntries();
+        }, SetMerchantLogo,SaveMerchantRuleFromEntry,()=>demo?"Demo · Erinnerung bleibt lokal.":data.ToDo.Enabled?"Wird mit Microsoft To Do abgeglichen.":"Erinnerung bleibt in simplebanking.");
         detail.ShowDialog(this);
     }
     void Dashboard() => OpenDashboard();
@@ -387,7 +396,8 @@ internal sealed partial class MainWindow : Form
         if (!RequireUnlocked()) return;
         var p = password ?? Prompt("Sicherungspasswort", "Passwort für die Demo-Sicherung (mindestens 6 Zeichen)", true); if (p == null || p.Length < 6) return;
         using var dialog = new SaveFileDialog { Filter = "Verschlüsselte Sicherung|*.sbw", FileName = "simplebanking-backup.sbw" }; if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        File.WriteAllBytes(dialog.FileName, EncryptedStore.Encrypt(data, p)); status.Text = "Verschlüsselte Sicherung erstellt.";
+        try { EncryptedStore.WriteBackup(dialog.FileName,data,p); status.Text = "Verschlüsselte Sicherung erstellt."; }
+        catch(Exception e) when(e is IOException or UnauthorizedAccessException) { MessageBox.Show(this,"Sicherung konnte nicht vollständig gespeichert werden. Eine bestehende Sicherung wurde nicht ersetzt."); }
     }
     void Restore()
     {

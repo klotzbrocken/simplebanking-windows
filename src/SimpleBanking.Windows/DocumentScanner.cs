@@ -23,13 +23,35 @@ internal static class DocumentScanner
         try{var bytes=new byte[bitmap.Width*bitmap.Height*4];for(int y=0;y<bitmap.Height;y++)Marshal.Copy(data.Scan0+y*data.Stride,bytes,y*bitmap.Width*4,bitmap.Width*4);var reader=new BarcodeReaderGeneric{Options=new ZXing.Common.DecodingOptions{TryHarder=true,PossibleFormats=[BarcodeFormat.QR_CODE]}};return reader.Decode(new RGBLuminanceSource(bytes,bitmap.Width,bitmap.Height,RGBLuminanceSource.BitmapFormat.BGRA32))?.Text;}finally{bitmap.UnlockBits(data);}
     }
     internal static string Ocr(byte[] bytes){using var engine=new TesseractEngine(Path.Combine(AppContext.BaseDirectory,"Assets","tessdata"),"deu+eng",EngineMode.Default);using var image=Pix.LoadFromMemory(bytes);using var page=engine.Process(image);return page.GetText();}
-    internal static string Read(string path){
+    internal static string Read(string path,CancellationToken cancellation=default,IProgress<string>? progress=null){
         if(new FileInfo(path).Length>30*1024*1024)throw new InvalidDataException("Dokument größer als 30 MB.");
+        using var engine=new TesseractEngine(Path.Combine(AppContext.BaseDirectory,"Assets","tessdata"),"deu+eng",EngineMode.Default);
         if(Path.GetExtension(path).Equals(".pdf",StringComparison.OrdinalIgnoreCase)){
-            using var document=UglyToad.PdfPig.PdfDocument.Open(path);var pages=document.GetPages().Take(3).ToArray();string text=string.Join("\n",pages.Select(p=>string.Join("\n",p.GetWords().GroupBy(w=>Math.Round(w.BoundingBox.Bottom/5)).OrderByDescending(g=>g.Key).Select(g=>string.Join(" ",g.OrderBy(w=>w.BoundingBox.Left).Select(w=>w.Text))))));
-            if(text.Count(char.IsLetterOrDigit)>=20)return text;
-            var extracted=new List<string>();foreach(var page in pages)foreach(var image in page.GetImages().Where(i=>i.WidthInSamples<=10000&&i.HeightInSamples<=10000).Take(3))if(image.TryGetPng(out var png)){using var stream=new MemoryStream(png);using var bitmap=new Bitmap(stream);string? qr=ReadQr(bitmap);if(qr?.StartsWith("BCD")==true)return qr;extracted.Add(Ocr(png));}return string.Join("\n",extracted);
+            byte[] pdf=File.ReadAllBytes(path);int count=PDFtoImage.Conversion.GetPageCount(pdf);
+            if(count>20)throw new InvalidDataException("Bitte höchstens 20 Rechnungsseiten pro Dokument verwenden.");
+            var extracted=new List<string>();
+            for(int i=0;i<count;i++){
+                cancellation.ThrowIfCancellationRequested();progress?.Report($"Seite {i+1} von {count} wird erkannt …");
+                var size=PDFtoImage.Conversion.GetPageSize(pdf,i);double factor=Math.Min(200d/72,3200/Math.Max(size.Width,size.Height));
+                if(size.Width<=0||size.Height<=0||!double.IsFinite(factor))throw new InvalidDataException("Ungültige PDF-Seitengröße.");
+                using var png=new MemoryStream();PDFtoImage.Conversion.SavePng(png,pdf,i,options:new PDFtoImage.RenderOptions(Dpi:200,Width:Math.Max(1,(int)(size.Width*factor)),Height:Math.Max(1,(int)(size.Height*factor))));png.Position=0;
+                using var bitmap=new Bitmap(png);var text=Recognize(bitmap,engine,cancellation);if(text.StartsWith("BCD\n"))return text;extracted.Add(text);
+            }
+            return string.Join("\n",extracted);
         }
-        using(var bitmap=new Bitmap(path)){if(bitmap.Width>10000||bitmap.Height>10000)throw new InvalidDataException("Bildabmessungen zu groß.");string? qr=ReadQr(bitmap);if(qr?.StartsWith("BCD")==true)return qr;using var stream=new MemoryStream();bitmap.Save(stream,System.Drawing.Imaging.ImageFormat.Png);return Ocr(stream.ToArray());}
+        using(var bitmap=new Bitmap(path)){if(bitmap.Width>10000||bitmap.Height>10000||bitmap.Width*(long)bitmap.Height>40_000_000)throw new InvalidDataException("Bildabmessungen zu groß.");progress?.Report("Bild wird erkannt …");return Recognize(bitmap,engine,cancellation);}
+    }
+    static string Recognize(Bitmap source,TesseractEngine engine,CancellationToken cancellation){
+        float ratio=Math.Min(1,3200f/Math.Max(source.Width,source.Height));using var bitmap=new Bitmap(source,new Size(Math.Max(1,(int)(source.Width*ratio)),Math.Max(1,(int)(source.Height*ratio))));
+        string best="";float score=-1;
+        for(int rotation=0;rotation<4;rotation++){
+            cancellation.ThrowIfCancellationRequested();if(rotation>0)bitmap.RotateFlip(RotateFlipType.Rotate90FlipNone);
+            string? qr=ReadQr(bitmap);if(qr!=null&&BankingRules.ParseGiroCode(qr,"scan")!=null)return qr.Replace("\r\n","\n");
+            using var png=new MemoryStream();bitmap.Save(png,System.Drawing.Imaging.ImageFormat.Png);using var pix=Pix.LoadFromMemory(png.ToArray());
+            using var deskewed=pix.Deskew();using var page=engine.Process(deskewed,PageSegMode.Auto);string text=page.GetText();float confidence=page.GetMeanConfidence();
+            if(text.Count(char.IsLetterOrDigit)<8)confidence=0;
+            if(confidence>score){score=confidence;best=text;}if(confidence>.88f)break;
+        }
+        return best;
     }
 }
