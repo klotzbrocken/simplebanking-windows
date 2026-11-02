@@ -49,9 +49,15 @@ jobs:
           }
           ./build-installer.ps1
           ./build-setup.ps1
+      - name: Verify large encrypted vault
+        shell: pwsh
+        run: |
+          dotnet app/simplebanking.dll --benchmark-vault .build/vault-benchmark.json
+          if ($LASTEXITCODE -ne 0) { throw 'Large vault regression failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: simplebanking-windows-${{ github.run_number }}
           path: |
             simplebanking-Beta-Setup.exe
             .build/test-results.json
+            .build/vault-benchmark.json

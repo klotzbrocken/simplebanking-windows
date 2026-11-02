@@ -3,12 +3,13 @@ internal sealed partial class TransactionDetails : Form
 {
     Entry entry;
     readonly Action<Entry> save;
+    readonly Func<string>? reminderStatus;
     Func<bool> flushNote=()=>true;
     internal bool FlushNote()=>flushNote();
     static readonly string[] categories = ["Einkommen","Essen & Alltag","Abos & Digital","Shopping","Versicherungen","Mobilität","Wohnen & Kredit","Sonstiges","Gastronomie","Sparen","Freizeit","Gehalt","Gesundheit","Umbuchungen"];
-    public TransactionDetails(Entry entry, bool hidden, Action<Entry> save, Func<Entry,byte[]?,Entry>? saveMerchantLogo = null)
+    public TransactionDetails(Entry entry, bool hidden, Action<Entry> save, Func<Entry,byte[]?,Entry>? saveMerchantLogo = null,Action<Entry>? createMerchantRule = null,Func<string>? reminderStatus=null)
     {
-        this.entry=entry;this.save=save;
+        this.entry=entry;this.save=save;this.reminderStatus=reminderStatus;
         Text="Buchungsdetails";ClientSize=new Size(400,688);StartPosition=FormStartPosition.CenterParent;
         FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;
         AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>Icon.Dispose();
@@ -56,7 +57,7 @@ internal sealed partial class TransactionDetails : Form
         var category=new ComboBox {DropDownStyle=ComboBoxStyle.DropDownList,Width=212,Margin=Padding.Empty};
         category.Items.AddRange(categories);if(!categories.Contains(entry.Category))category.Items.Add(entry.Category);category.SelectedItem=entry.Category;
         category.SelectedIndexChanged+=(_,_)=>{var changed=this.entry with {Category=category.SelectedItem?.ToString()??entry.Category};save(changed);this.entry=changed;};categoryCard.Controls.Add(category);
-        if(entry.PurposeCode.Length>0)Label(details,"Bankcode: "+entry.PurposeCode,11);
+        if(entry.PurposeCode.Length>0)Label(details,"Zweckcode: "+entry.PurposeCode,11);if(entry.BankTransactionCode.Length>0)Field(details,"Buchungsart der Bank",entry.BankTransactionCode);
         if(!string.IsNullOrWhiteSpace(entry.CounterpartyIban))Field(details,"IBAN",entry.CounterpartyIban,true);if(!string.IsNullOrWhiteSpace(entry.CounterpartyBic))Field(details,"BIC (SWIFT)",entry.CounterpartyBic,true);
         void ChangeLogo(byte[]? bytes,bool shared) {
             try {
@@ -71,6 +72,7 @@ internal sealed partial class TransactionDetails : Form
         }
         var logoMenu=new ContextMenuStrip();logoMenu.Items.Add("Bild für diese Buchung auswählen …",null,(_,_)=>ChooseLogo(false));logoMenu.Items.Add("Buchungslogo zurücksetzen",null,(_,_)=>ChangeLogo(null,false));
         if(saveMerchantLogo!=null&&MerchantLogoStore.Key(entry)!=null){logoMenu.Items.Add(new ToolStripSeparator());logoMenu.Items.Add("Bild für diesen Händler im Konto …",null,(_,_)=>ChooseLogo(true));logoMenu.Items.Add("Händlerlogo zurücksetzen",null,(_,_)=>ChangeLogo(null,true));}
+        if(createMerchantRule!=null){logoMenu.Items.Add(new ToolStripSeparator());logoMenu.Items.Add("Als Händlerregel speichern …",null,(_,_)=>createMerchantRule(this.entry));}
         artwork.Click+=(_,_)=>logoMenu.Show(artwork,new Point(0,artwork.Height));artwork.ContextMenuStrip=logoMenu;Disposed+=(_,_)=>logoMenu.Dispose();
         var notes=Card();Label(notes,"Notiz",14,true);
         var noteFrame=new Panel{Width=320,Height=104,BackColor=Color.White,Margin=Padding.Empty};
@@ -91,6 +93,6 @@ internal sealed class RoundedCard : FlowLayoutPanel
         base.OnPaintBackground(e);e.Graphics.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
         using var p=new System.Drawing.Drawing2D.GraphicsPath();const int d=16;
         p.AddArc(0,0,d,d,180,90);p.AddArc(Width-d,0,d,d,270,90);p.AddArc(Width-d,Height-d,d,d,0,90);p.AddArc(0,Height-d,d,d,90,90);p.CloseFigure();
-        e.Graphics.FillPath(Brushes.White,p);using var border=new Pen(Color.FromArgb(229,229,229));e.Graphics.DrawPath(border,p);
+        using var fill=new SolidBrush(ThemeStyling.Current.Surface);if(ThemeStyling.Current.SquareControls)e.Graphics.FillRectangle(fill,ClientRectangle);else e.Graphics.FillPath(fill,p);using var border=new Pen(ThemePalette.Blend(ThemeStyling.Current.Ink,ThemeStyling.Current.Surface,.15));e.Graphics.DrawPath(border,p);
     }
 }

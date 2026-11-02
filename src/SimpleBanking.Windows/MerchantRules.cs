@@ -9,11 +9,20 @@ internal static class UserMerchantRules
         string text=rule.Scope switch{"Empfänger"=>name,"Verwendungszweck"=>entry.Purpose+" "+entry.AdditionalInformation,"End-to-End-ID"=>entry.EndToEndId,_=>name+" "+entry.Purpose+" "+entry.AdditionalInformation+" "+entry.EndToEndId};
         try{return rule.MatchType switch{"Regex"=>Regex.IsMatch(text,rule.Pattern,RegexOptions.IgnoreCase|RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100)),"Ist"=>AssignmentRules.Normalize(text)==AssignmentRules.Normalize(rule.Pattern),_=>AssignmentRules.Normalize(text).Contains(AssignmentRules.Normalize(rule.Pattern))};}catch(RegexMatchTimeoutException){return false;}catch(ArgumentException){return false;}
     }
-    internal static Entry Apply(Entry entry,IEnumerable<MerchantUserRule> rules){string original=entry.OriginalMerchant??entry.Merchant;if(!string.IsNullOrWhiteSpace(entry.MerchantOverride))return entry with{OriginalMerchant=original,Merchant=entry.MerchantOverride};var rule=rules.OrderBy(r=>r.Priority).FirstOrDefault(r=>Matches(r,entry));return entry with{OriginalMerchant=original,Merchant=rule?.Merchant??original};}
+    internal static Entry Apply(Entry entry,IEnumerable<MerchantUserRule> rules){string original=entry.OriginalMerchant??entry.Merchant;if(!string.IsNullOrWhiteSpace(entry.MerchantOverride))return entry with{OriginalMerchant=original,Merchant=entry.MerchantOverride,MerchantSource="tx_override",MerchantConfidence=1};var rule=rules.OrderBy(r=>r.Priority).FirstOrDefault(r=>Matches(r,entry));return entry with{OriginalMerchant=original,Merchant=rule?.Merchant??original,MerchantSource=rule==null?null:"user_rule",MerchantConfidence=rule==null?null:.99};}
 }
 internal sealed partial class MainWindow
 {
-    void ApplyMerchantRules(){for(int i=0;i<data.Entries.Count;i++){var original=data.Entries[i];var resolved=UserMerchantRules.Apply(original,data.MerchantRules);if(string.IsNullOrWhiteSpace(original.MerchantOverride)&&!data.MerchantRules.Any(r=>UserMerchantRules.Matches(r,original)))resolved=resolved with{Merchant=MerchantResolver.Resolve(original,data.Accounts.FirstOrDefault(a=>a.Id==original.AccountId),data.Accounts)};data.Entries[i]=MerchantLogoStore.Apply(resolved,data.MerchantLogos);}}
+    internal void SaveMerchantRuleFromEntry(Entry entry){
+        if(!RequireUnlocked())return;
+        var suggestion=MerchantRuleSuggestion.From(entry);
+        using var editor=new MerchantRuleEditor(new(Guid.NewGuid().ToString("N"),true,100,suggestion.Scope,"Enthält",suggestion.Pattern,entry.Merchant),data.Entries);
+        if(editor.ShowDialog(this)!=DialogResult.OK||editor.Result is not {} rule)return;
+        var previous=data.Entries.ToList();
+        try{data.MerchantRules.Add(rule);ApplyMerchantRules();Save();Populate();}
+        catch{data.MerchantRules.Remove(rule);data.Entries=previous;Populate();throw;}
+    }
+    void ApplyMerchantRules(){for(int i=0;i<data.Entries.Count;i++){var original=data.Entries[i];var resolved=UserMerchantRules.Apply(original,data.MerchantRules);if(string.IsNullOrWhiteSpace(original.MerchantOverride)&&!data.MerchantRules.Any(r=>UserMerchantRules.Matches(r,original))){var resolution=MerchantResolver.ResolveDetailed(original,data.Accounts.FirstOrDefault(a=>a.Id==original.AccountId),data.Accounts);resolved=resolved with{Merchant=resolution.Name,MerchantSource=resolution.Source,MerchantConfidence=resolution.Confidence};}if(!resolved.CategoryManual&&resolved.Category is "" or "Unkategorisiert")resolved=resolved with{Category=AutomaticCategories.Classify(resolved)};data.Entries[i]=MerchantLogoStore.Apply(resolved,data.MerchantLogos);}}
     void RenameMerchant(Entry entry){if(!RequireUnlocked())return;var name=Prompt("Händlername ändern","Anzeigename nur für diesen Umsatz",value:entry.Merchant);if(name==null)return;if(string.IsNullOrWhiteSpace(name)||name.Trim().Length>120){MessageBox.Show(this,"Bitte einen Namen mit 1 bis 120 Zeichen eingeben.");return;}SetMerchantOverride(entry,name.Trim());}
     void SetMerchantOverride(Entry entry,string? name){if(!RequireUnlocked())return;int index=data.Entries.FindIndex(e=>e.Id==entry.Id&&e.AccountId==entry.AccountId);if(index<0)return;var previous=data.Entries.ToList();try{data.Entries[index]=data.Entries[index] with{MerchantOverride=name};ApplyMerchantRules();Save();Populate();}catch{data.Entries=previous;Populate();throw;}}
     internal void OpenMerchantRules(){

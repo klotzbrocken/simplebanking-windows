@@ -10,6 +10,7 @@ internal sealed class TransactionList : UserControl
     readonly Dictionary<int, Control> realized = new();
     public event Action<Entry>? OpenEntry;
     public event Action<Entry>? RenameMerchant;
+    public event Action<Entry>? CreateMerchantRule;
     public event Action<Entry>? ResetMerchant;
     public event Action<Entry>? ToggleRead;
     public event Action<Entry?>? SelectionChanged;
@@ -104,6 +105,7 @@ internal sealed class TransactionList : UserControl
         };
         var menu=new ContextMenuStrip();menu.Items.Add("Buchungsdetails",null,(_,_)=>OpenEntry?.Invoke(entry));
         menu.Items.Add("Händlername ändern …",null,(_,_)=>RenameMerchant?.Invoke(entry));
+        menu.Items.Add("Als Händlerregel speichern …",null,(_,_)=>CreateMerchantRule?.Invoke(entry));
         if(entry.MerchantOverride!=null)menu.Items.Add("Händlername zurücksetzen",null,(_,_)=>ResetMerchant?.Invoke(entry));
         menu.Items.Add(entry.Read?"Als ungelesen markieren":"Als gelesen markieren",null,(_,_)=>ToggleRead?.Invoke(entry));
         row.ContextMenuStrip=menu;row.Disposed+=(_,_)=>menu.Dispose();return row;

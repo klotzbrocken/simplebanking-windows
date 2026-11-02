@@ -10,21 +10,21 @@ internal sealed class AccountFinanceSettings
     public int SalaryPreset { get; set; } = 2;
     public int EffectiveSalaryDay => SalaryPreset switch {0=>1,1=>15,_=>Math.Clamp(SalaryDay,1,31)};
 }
-internal sealed record RecurringSummary(decimal? Outstanding,decimal? BankFee,DateOnly? CycleEnd,IReadOnlyList<RecurringPayment> Payments)
+internal sealed record RecurringSummary(decimal? Outstanding,decimal? BankFee,DateOnly? CycleEnd,IReadOnlyList<RecurringPayment> Payments,DateOnly? CycleStart=null)
 {
     internal static readonly RecurringSummary Unknown=new(null,null,null,[]);
     internal static RecurringSummary Calculate(IEnumerable<Entry> entries,Account account,AccountFinanceSettings settings,DateOnly today,IReadOnlyDictionary<string,string>? assignments=null,IReadOnlyList<AssignmentRule>? rules=null) {
-        var history=entries.Where(e=>e.AccountId==account.Id && e.Currency==account.Currency && e.Date>=today.AddDays(-90) && e.Date<=today).ToList();
+        var history=entries.Where(e=>!e.Pending && e.AccountId==account.Id && e.Currency==account.Currency && e.Date>=today.AddDays(-90) && e.Date<=today).ToList();
         if(history.Count==0)return Unknown;
         var payments=RecurringCosts.Analyze(history,account.BankName??account.Name);
         payments=payments.Where(p=>{
-            string? action=assignments?.GetValueOrDefault(account.Id+"/"+p.GroupKey)??AssignmentRules.Sorted(rules??[]).FirstOrDefault(r=>r.Recurring!=null&&history.Where(e=>p.EntryIds.Contains(e.Id)).Any(e=>AssignmentRules.Matches(r,e,p.Frequency)))?.Recurring;
+            string? action=RecurringAssignmentKeys.Find(assignments,account.Id,p.GroupKey)??AssignmentRules.Sorted(rules??[]).FirstOrDefault(r=>r.Recurring!=null&&history.Where(e=>p.EntryIds.Contains(e.Id)).Any(e=>AssignmentRules.Matches(r,e,p.Frequency)))?.Recurring;
             return action!="Ausschließen";
         }).ToList();
         DateOnly? salary=history.Where(e=>e.Amount>0 && RecurringCosts.SalaryCredit(e)).Select(e=>(DateOnly?)e.Date).Max();
         var cycle=RecurringCosts.Cycle(settings.EffectiveSalaryDay,today,salary);
         var fee=payments.FirstOrDefault(p=>p.Category=="bankFees")?.AverageAmount;
-        return new(RecurringCosts.LeftToPay(payments,cycle.Start,cycle.End),fee,cycle.End,payments);
+        return new(RecurringCosts.LeftToPay(payments,cycle.Start,cycle.End),fee,cycle.End,payments,cycle.Start);
     }
     internal string Subtitle(int mode,decimal? balance,string currency,DateOnly today,bool unified=false) {
         string Money(decimal value)=>decimal.Round(value,0,MidpointRounding.AwayFromZero).ToString("N0",CultureInfo.GetCultureInfo("de-DE"))+" "+(currency=="EUR"?"€":currency);

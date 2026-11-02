@@ -2,6 +2,7 @@ namespace SimpleBanking;
 internal sealed partial class SettingsWindow
 {
     void BuildAbout(){
+        Action("Nach Updates suchen …",owner.OpenUpdater);
         var app=new RoundedCard{Width=550,Padding=new Padding(16)};
         var identity=new Panel{Width=510,Height=88,BackColor=Color.Transparent};
         using var stream=typeof(MainWindow).Assembly.GetManifestResourceStream("SimpleBanking.AppMark.png")!;using var source=Image.FromStream(stream);

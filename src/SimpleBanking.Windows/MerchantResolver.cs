@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 namespace SimpleBanking;
+internal sealed record MerchantResolution(string Name,string Source,double Confidence);
 internal static class MerchantResolver
 {
     static readonly string[] processors=["landesbank hessen-thuringen","landesbank hessen-thueringen","adyen","nexi","wirecard","payone","sumup","fiserv","worldline"];
@@ -20,17 +21,18 @@ internal static class MerchantResolver
         if(kind=="paypal"&&Capture(text,@"/\.\s*([^,;/]{2,120})\s*,\s*ihr\s+einkauf\s+bei") is {} preceding)return preceding;
         return kind=="card"?null:Capture(text,Regex.Escape(kind)+@"\s*[\*:\-]?\s*([^,;/]{2,100})");
     }
-    internal static string Resolve(Entry entry,Account? account=null,IEnumerable<Account>? ownAccounts=null){
+    internal static string Resolve(Entry entry,Account? account=null,IEnumerable<Account>? ownAccounts=null)=>ResolveDetailed(entry,account,ownAccounts).Name;
+    internal static MerchantResolution ResolveDetailed(Entry entry,Account? account=null,IEnumerable<Account>? ownAccounts=null){
         string raw=entry.OriginalMerchant??entry.Merchant;string party=entry.BankCounterpartyName??raw;string lower=party.ToLowerInvariant();var texts=new[]{entry.Purpose,entry.AdditionalInformation};
         string Canonical(string? value)=>RecurringCosts.CanonicalMerchant(Clean(value)??"Unbekannt");
-        if(entry.Amount<0&&(lower.Contains("ga nr")||lower.StartsWith("f0")||texts.Any(t=>t.Contains("geldautomat",StringComparison.OrdinalIgnoreCase)||t.Contains("bargeldausz",StringComparison.OrdinalIgnoreCase))||entry.Amount<0&&entry.AdditionalInformation.Contains("barauszahl",StringComparison.OrdinalIgnoreCase)))return "Bargeldabhebung";
-        if(entry.Amount<0){foreach(string provider in new[]{"paypal","klarna"})if(lower.Contains(provider)){foreach(string text in texts)if(Extract(text,provider) is {} name)return Canonical(name);return provider=="paypal"?"PayPal (Intermediaer)":"Klarna (Intermediaer)";}
-            if(processors.Any(lower.Contains)){foreach(string text in texts)if(Extract(text,"card") is {} name)return Canonical(name);return "Kartenzahlung (Intermediaer)";}}
-        foreach(string text in texts)if(Capture(text,@"ABWA\+[A-Z0-9]+\.([^/\n]{2,80})/") is {} abwa)return Canonical(abwa);
+        if(entry.Amount<0&&(lower.Contains("ga nr")||lower.StartsWith("f0")||texts.Any(t=>t.Contains("geldautomat",StringComparison.OrdinalIgnoreCase)||t.Contains("bargeldausz",StringComparison.OrdinalIgnoreCase))||entry.Amount<0&&entry.AdditionalInformation.Contains("barauszahl",StringComparison.OrdinalIgnoreCase)))return new("Bargeldabhebung","cash_pattern",.98);
+        if(entry.Amount<0){foreach(string provider in new[]{"paypal","klarna"})if(lower.Contains(provider)){foreach(string text in texts)if(Extract(text,provider) is {} name)return new(Canonical(name),provider+"_purpose",.95);return new(provider=="paypal"?"PayPal (Intermediaer)":"Klarna (Intermediaer)",provider+"_intermediary",.45);}
+            if(processors.Any(lower.Contains)){foreach(string text in texts)if(Extract(text,"card") is {} name)return new(Canonical(name),"card_processor_purpose",.75);return new("Kartenzahlung (Intermediaer)","card_processor_intermediary",.35);}}
+        foreach(string text in texts)if(Capture(text,@"ABWA\+[A-Z0-9]+\.([^/\n]{2,80})/") is {} abwa)return new(Canonical(abwa),"abwa_format",.88);
         bool own=OwnPartyRegistry.Contains(ownAccounts??(account==null?[]:new[]{account}),party,entry.CounterpartyIban);
-        if(!own&&Clean(party) is {} counterparty&&counterparty!="Unbekannt")return Canonical(counterparty);
-        foreach(string text in texts){var card=Capture(text,@"\d{1,2}:\d{2}\s*(.+?)\\")??Capture(text,@"\d{1,2}:\d{2}\s*(.{3,60})$");if(card!=null)return Canonical(StripBranch(card));var generic=Capture(text,@"(?:purchase\s+at|einkauf\s+bei|zahlung\s+an)\s+(.+)$");if(generic!=null)return Canonical(generic);}
-        return "Unbekannt";
+        if(!own&&Clean(party) is {} counterparty&&counterparty!="Unbekannt")return new(Canonical(counterparty),entry.Amount<0?"empfaenger":"absender",entry.Amount<0?.9:.75);
+        foreach(string text in texts){var card=Capture(text,@"\d{1,2}:\d{2}\s*(.+?)\\")??Capture(text,@"\d{1,2}:\d{2}\s*(.{3,60})$");if(card!=null)return new(Canonical(StripBranch(card)),"kartenzahlung",.8);var generic=Capture(text,@"(?:purchase\s+at|einkauf\s+bei|zahlung\s+an)\s+(.+)$");if(generic!=null)return new(Canonical(generic),"purpose_inferred",.6);}
+        return new("Unbekannt","unknown",.1);
     }
     internal static string StripBranch(string name){while(Regex.IsMatch(name,@"\s+\d{2,}$")){string next=Regex.Replace(name,@"\s+\d{2,}$","");if(!next.Any(char.IsLetter))break;name=next;}return name;}
 }

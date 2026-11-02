@@ -7,7 +7,18 @@ internal sealed record ThemePackage(Dictionary<string,string> Values,Dictionary<
     static byte[] ReadEntry(Stream stream,int limit){using var output=new MemoryStream();var buffer=new byte[8192];int count;while((count=stream.Read(buffer))>0){if(output.Length+count>limit)throw new InvalidDataException("Theme-Datei überschreitet die Größenbegrenzung.");output.Write(buffer,0,count);}return output.ToArray();}
     internal static ThemePackage Read(string path){
         if(new FileInfo(path).Length>40*1024*1024)throw new InvalidDataException("Theme-Pakete dürfen höchstens 40 MB groß sein.");
-        if(Path.GetExtension(path).Equals(".cfg",StringComparison.OrdinalIgnoreCase)){using var file=File.OpenRead(path);return Validate(ThemeFiles.Read(Encoding.UTF8.GetString(ReadEntry(file,65536))),new(StringComparer.OrdinalIgnoreCase));}
+        if(Path.GetExtension(path).Equals(".cfg",StringComparison.OrdinalIgnoreCase)){
+            using var file=File.OpenRead(path);var config=ThemeFiles.Read(Encoding.UTF8.GetString(ReadEntry(file,65536)));var assets=new Dictionary<string,byte[]>(StringComparer.OrdinalIgnoreCase);
+            foreach(var name in ImageKeys.Concat(["bodyFont","headingFont"]).Where(config.ContainsKey).Select(k=>config[k]).Distinct(StringComparer.OrdinalIgnoreCase)){
+                if(Path.GetExtension(name).Length==0)continue;
+                if(name!=Path.GetFileName(name)||name.Contains(':')||name.Contains('\\')||name.StartsWith('.'))throw new InvalidDataException("Ungültiger Theme-Dateiname.");
+                string asset=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,name);
+                if(!File.Exists(asset))throw new InvalidDataException("Theme-Datei fehlt: "+name);
+                if((File.GetAttributes(asset)&FileAttributes.ReparsePoint)!=0)throw new InvalidDataException("Verknüpfte Theme-Dateien sind nicht erlaubt.");
+                using var input=File.OpenRead(asset);assets[name]=ReadEntry(input,4*1024*1024);
+            }
+            return Validate(config,assets);
+        }
         using var archive=ZipFile.OpenRead(path);if(archive.Entries.Count>128)throw new InvalidDataException("Zu viele Dateien im Theme-Paket.");
         var files=new Dictionary<string,byte[]>(StringComparer.OrdinalIgnoreCase);long total=0;
         foreach(var entry in archive.Entries){
@@ -15,7 +26,7 @@ internal sealed record ThemePackage(Dictionary<string,string> Values,Dictionary<
             if(parts.Any(p=>p=="..")||entry.FullName.Contains(':')||entry.FullName.StartsWith('/')||((entry.ExternalAttributes>>16)&0xf000)==0xa000)throw new InvalidDataException("Ungültiger Dateipfad im Theme-Paket.");
             if(parts.Any(p=>p.StartsWith('.')||p=="__MACOSX")||entry.Name.Length==0)continue;
             total+=entry.Length;if(total>24*1024*1024)throw new InvalidDataException("Entpackte Theme-Dateien dürfen höchstens 24 MB groß sein.");
-            string name=parts[^1],ext=Path.GetExtension(name).ToLowerInvariant();if(ext is not (".cfg" or ".png"))continue;
+            string name=parts[^1],ext=Path.GetExtension(name).ToLowerInvariant();if(ext is not (".cfg" or ".png" or ".svg" or ".pdf" or ".ttf" or ".otf"))continue;
             if(files.ContainsKey(name))throw new InvalidDataException("Doppelter Dateiname im Paket: "+name);
             using var input=entry.Open();files[name]=ReadEntry(input,ext==".cfg"?65536:4*1024*1024);
         }
@@ -28,14 +39,15 @@ internal sealed record ThemePackage(Dictionary<string,string> Values,Dictionary<
         foreach(string key in ImageKeys){
             if(!values.TryGetValue(key,out var name)||string.IsNullOrWhiteSpace(name))continue;
             if(name!=Path.GetFileName(name)||name.Contains('\\')||name.Contains('/')||name.Contains(':'))throw new InvalidDataException("Theme-Grafiken benötigen einfache Dateinamen.");
-            if(!Path.GetExtension(name).Equals(".png",StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("Die Grafik „"+name+"“ wird noch nicht unterstützt. Bitte eine PNG-Version verwenden.");
-            if(!files.TryGetValue(name,out var bytes))throw new InvalidDataException("Die Grafik „"+name+"“ fehlt. Bitte CFG und PNG gemeinsam als ZIP importieren.");
-            if(bytes.Length<33||!bytes.AsSpan(0,8).SequenceEqual(new byte[]{137,80,78,71,13,10,26,10}))throw new InvalidDataException("Keine gültige PNG-Grafik: "+name);
-            uint width=System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(16,4)),height=System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(20,4));
-            if(width==0||height==0||width>4096||height>4096||(long)width*height>8_000_000)throw new InvalidDataException("Theme-Grafik ist zu groß (maximal 4096 Pixel / 8 Megapixel).");
-            using var stream=new MemoryStream(bytes);using var image=Image.FromStream(stream,true,true);
-            if(image.Width>4096||image.Height>4096||(long)image.Width*image.Height>8_000_000)throw new InvalidDataException("Theme-Grafik ist zu groß (maximal 4096 Pixel / 8 Megapixel).");
-            images[name]=bytes;
+            if(!files.TryGetValue(name,out var bytes))throw new InvalidDataException("Die Datei „"+name+"“ fehlt im Theme-Paket.");
+            string normalized=Path.GetExtension(name).Equals(".png",StringComparison.OrdinalIgnoreCase)?name:"rendered-"+Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes))+".png";
+            if(!images.ContainsKey(normalized))images[normalized]=ThemeArtwork.Normalize(name,bytes);
+            values[key]=normalized;
+        }
+        foreach(string key in new[]{"bodyFont","headingFont"}){
+            if(!values.TryGetValue(key,out var name)||Path.GetExtension(name).ToLowerInvariant() is not (".ttf" or ".otf"))continue;
+            if(name!=Path.GetFileName(name)||name.Contains(':')||name.Contains('\\')||!files.TryGetValue(name,out var font))throw new InvalidDataException("Theme-Schrift fehlt oder hat einen ungültigen Namen.");
+            ThemeFonts.Validate(font);images[name]=font;
         }
         return new(values,images);
     }

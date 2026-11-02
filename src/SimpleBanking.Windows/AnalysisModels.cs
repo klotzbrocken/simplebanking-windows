@@ -35,7 +35,7 @@ internal static class Subscriptions
     static Cancellation[] Load(){using var stream=typeof(Subscriptions).Assembly.GetManifestResourceStream("SimpleBanking.Cancellation.json")!;return System.Text.Json.JsonSerializer.Deserialize<Cancellation[]>(stream)!;}
     internal static string Frequency(PaymentFrequency frequency)=>frequency switch{PaymentFrequency.Monthly=>"Monatlich",PaymentFrequency.Quarterly=>"Vierteljährlich",PaymentFrequency.Yearly=>"Jährlich",_=>"Unregelmäßig"};
     internal static List<Subscription> Detect(IEnumerable<Entry> source,string? bankName=null,IReadOnlyList<AssignmentRule>? rules=null,IReadOnlyDictionary<string,string>? assignments=null) {
-        var list=source.Where(e=>e.Amount<0&&!new[]{"erstattung","rückzahlung","retoure","umbuchung","übertrag auf konto"}.Any(e.Purpose.ToLowerInvariant().Contains)).ToList();
+        var list=source.Where(e=>!e.Pending&&e.Amount<0&&!new[]{"erstattung","rückzahlung","retoure","umbuchung","übertrag auf konto"}.Any(e.Purpose.ToLowerInvariant().Contains)).ToList();
         string Group(Entry e){
             if(RecurringCosts.BankFee(e,bankName))return "Bankgebühren";
             var merchant=RecurringCosts.Merchant(e);var category=RecurringCosts.Category(merchant);
@@ -48,7 +48,7 @@ internal static class Subscriptions
         foreach(var group in list.GroupBy(Group)) {
             var rows=group.OrderBy(e=>e.Date).ToArray();bool standing=rows.Any(RecurringCosts.StandingOrder);if(rows.Length<2&&!standing)continue;
             string name=group.Key.Split('|')[0],lower=name.ToLowerInvariant(),category=RecurringCosts.Category(name);
-            if(new[]{"paypal europe","klarna bank","amazon payments","google payment","apple pay"}.Any(lower.Contains))continue;
+            if(RecurringCosts.IsPaymentProcessor(name))continue;
             decimal avg=rows.Average(e=>-e.Amount),dev=rows.Max(e=>Math.Abs(-e.Amount-avg)),variance=dev/avg;
             var gaps=rows.Zip(rows.Skip(1)).Select(p=>p.Second.Date.DayNumber-p.First.Date.DayNumber).ToArray();
             if(category=="bankFees" && (rows.Length<2||dev>=.01m||gaps.Any(d=>d<20||d>100)))continue;
@@ -62,7 +62,7 @@ internal static class Subscriptions
             if(score<7)continue;
             string tab=category switch {"finance"=>"Sparen","bankFees" or "insurance" or "utilities"=>"Verbindlichkeiten","telecom" or "transport"=>"Verträge","membership" when new[]{"mcfit","clever fit","cleverfit","urban sports","fitx","fitness first","kieser","yoga","pilates","holmes place","john reed","sportstudio","fitnessclub","crossfit","anytime fitness"}.Any(lower.Contains)=>"Verträge",_=>new[]{"versicherung","krankenkasse","aok","barmer","debeka","stadtwerke","eon ","rwe","vattenfall","enpal","wohnungsbau","mietverwaltung","hausverwaltung","mietvertrag","kreditrate","kreditabrechnung","miete"}.Any(lower.Contains)?"Verbindlichkeiten":"Abos"};
             var cadence=monthly?PaymentFrequency.Monthly:PaymentFrequency.Irregular;
-            string? action=assignments?.GetValueOrDefault(rows[0].AccountId+"/"+group.Key)??AssignmentRules.Sorted(rules??[]).FirstOrDefault(r=>r.Recurring!=null&&rows.Any(e=>AssignmentRules.Matches(r,e,cadence)))?.Recurring;
+            string? action=RecurringAssignmentKeys.Find(assignments,rows[0].AccountId,group.Key)??AssignmentRules.Sorted(rules??[]).FirstOrDefault(r=>r.Recurring!=null&&rows.Any(e=>AssignmentRules.Matches(r,e,cadence)))?.Recurring;
             if(action=="Ausschließen")continue;if(action!=null){tab=action;score=Math.Max(score,10);}
             result.Add(new(group.Key,cancel?.Name??name,avg,-rows[^1].Amount,rows[^1].Date,cadence,score,category,tab,rows,cancel?.Url));
         }
@@ -83,20 +83,21 @@ internal sealed record Mmi(decimal Income,decimal Expenses,decimal Savings,decim
     internal static Mmi Calculate(IEnumerable<Entry> entries,decimal balance,int period,DateOnly today,IEnumerable<Subscription> subscriptions,bool includeSavings=true) {
         var tagged=subscriptions.Where(s=>s.Tab=="Sparen").SelectMany(s=>s.Entries).Select(e=>e.AccountId+"/"+e.Id).ToHashSet();
         var cutoff=period==0?today.AddMonths(-1):period==1?today.AddMonths(-3):new DateOnly(today.Year,1,1);
-        var rows=entries.Where(e=>e.Date>=cutoff).ToList();bool Tagged(Entry e)=>tagged.Contains(e.AccountId+"/"+e.Id);
+        var rows=entries.Where(e=>!e.Pending&&e.Date>=cutoff&&e.Date<=today).ToList();bool Tagged(Entry e)=>tagged.Contains(e.AccountId+"/"+e.Id);
         return new(rows.Where(e=>Kind(e)=="income").Sum(e=>e.Amount),rows.Where(e=>Kind(e)=="expense"&&!Tagged(e)).Sum(e=>Math.Abs(e.Amount)),includeSavings?rows.Where(e=>Kind(e)=="savings"||(Kind(e)=="expense"&&Tagged(e))).Sum(e=>Math.Abs(e.Amount)):0,balance,period==0?1:period==1?3:today.Month);
     }
 }
-internal sealed record MoneyAgeResult(double? Days,int Samples,int Total,int Uncovered,double? Previous) {
+internal sealed record MoneyAgeResult(double? Days,int Samples,int Total,int Uncovered,double? Previous,double? Minimum=null,double? Maximum=null) {
+    internal string Band=>Days is not {} d?"Noch keine Daten":d<15?"Eingang zu Ausgang":d<30?"Solide, aber eng":d<60?"Du hast Puffer":"Du lebst einen Monat voraus";
     internal static MoneyAgeResult Calculate(IEnumerable<Entry> entries,int size=10) {
         var funds=new LinkedList<(DateOnly Date,decimal Amount)>();var ages=new List<double>();int total=0,uncovered=0;
-        foreach(var e in entries.OrderBy(e=>e.Date)) {
+        foreach(var e in entries.Where(e=>!e.Pending).OrderBy(e=>e.Date)) {
             if(e.Amount>0){funds.AddLast((e.Date,e.Amount));continue;}if(e.Amount==0)continue;
             total++;decimal remaining=-e.Amount,weighted=0,consumed=0;
             while(remaining>0&&funds.First is {} first){decimal take=Math.Min(first.Value.Amount,remaining);weighted+=take*Math.Max(0,e.Date.DayNumber-first.Value.Date.DayNumber);consumed+=take;remaining-=take;if(take==first.Value.Amount)funds.RemoveFirst();else first.Value=(first.Value.Date,first.Value.Amount-take);}
             if(consumed>0)ages.Add((double)(weighted/consumed));if(remaining>0)uncovered++;
         }
         var window=ages.TakeLast(Math.Max(1,size)).ToArray();var previous=ages.Take(ages.Count-window.Length).TakeLast(Math.Max(1,size)).ToArray();
-        return new(window.Length>0?window.Average():null,window.Length,total,uncovered,previous.Length>0?previous.Average():null);
+        return new(window.Length>0?window.Average():null,window.Length,total,uncovered,previous.Length>0?previous.Average():null,window.Length>0?window.Min():null,window.Length>0?window.Max():null);
     }
 }

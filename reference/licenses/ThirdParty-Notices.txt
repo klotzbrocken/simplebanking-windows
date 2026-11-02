@@ -6,3 +6,5 @@ Third-party additions in Windows 0.2.1:
 - PdfPig 0.1.16, UglyToad and contributors, Apache-2.0 with bundled notices (Apache-2.0.txt, PdfPig-NOTICES.txt).
 - PDFsharp-GDI, .NET runtime and Space Mono: see their accompanying license files.
 Original simplebanking assets and source: MAC-LICENSE.txt. Native Yaxi and JSON libraries: accompanying vendor licenses.
+
+Windows 0.18.0 theme rendering: Svg 3.4.8 (MS-PL), ExCSS 4.2.3 (MIT), PDFtoImage 5.4.0 (MIT), SkiaSharp 4.150.1, PDFium binaries 152.0.7961. License texts and PDFium third-party notices accompany this distribution. Original categories_de.json is from simplebanking for macOS (MAC-LICENSE.txt).

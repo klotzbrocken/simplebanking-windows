@@ -22,6 +22,7 @@ internal sealed class BalanceFlyout : Form
     public BalanceFlyout(MainWindow owner)
     {
         this.owner = owner; FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false;
+        AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);
         StartPosition = FormStartPosition.Manual; TopMost = true; DoubleBuffered = true; KeyPreview = true;
         ClientSize = new Size(348, 178); Controls.Add(slots);
         card=new BalanceCard(owner,true) { Dock=DockStyle.Top,Height=140 };
@@ -66,15 +67,14 @@ internal sealed class BalanceFlyout : Form
     {
         if(IsPinned){RefreshCards();Show();Activate();return;}
         RefreshCards(); var screen = Screen.FromPoint(Cursor.Position); var area = screen.WorkingArea;
-        int x = Cursor.Position.X - Width/2, y = area.Bottom-Height-8;
-        if(area.Top > screen.Bounds.Top) y = area.Top+8;
-        else if(area.Left > screen.Bounds.Left) { x=area.Left+8;y=Cursor.Position.Y-Height/2; }
-        else if(area.Right < screen.Bounds.Right) { x=area.Right-Width-8;y=Cursor.Position.Y-Height/2; }
-        Location = new Point(Math.Clamp(x,area.Left,Math.Max(area.Left,area.Right-Width)),Math.Clamp(y,area.Top,Math.Max(area.Top,area.Bottom-Height)));
+        Location=WindowPlacement.Tray(Cursor.Position,Size,screen.Bounds,area,(int)(8*DeviceDpi/96f));
         Show(); Activate(); if(owner.Preferences.RippleAlwaysOn)card.StartRipple();
     }
     internal void SetPinned(bool value,bool save=true){IsPinned=value;TopMost=true;owner.Preferences.WidgetEnabled=value;pin.Invalidate();closeWidget.Visible=value;SetWidgetHover(RectangleToScreen(ClientRectangle).Contains(Cursor.Position));RefreshCards();if(save)SaveWidgetPosition();}
-    void SaveWidgetPosition(){var area=Screen.FromPoint(Location).WorkingArea;Location=new Point(Math.Clamp(Left,area.Left,Math.Max(area.Left,area.Right-Width)),Math.Clamp(Top,area.Top,Math.Max(area.Top,area.Bottom-Height)));owner.Preferences.WidgetX=Left;owner.Preferences.WidgetY=Top;owner.Preferences.Save();}
+    internal void FitWidgetToDisplay(){Location=WindowPlacement.Clamp(Bounds,Screen.FromRectangle(Bounds).WorkingArea);}
+    void SaveWidgetPosition(){FitWidgetToDisplay();owner.Preferences.WidgetX=Left;owner.Preferences.WidgetY=Top;owner.Preferences.Save();}
+    protected override void OnDpiChanged(DpiChangedEventArgs e){base.OnDpiChanged(e);if(IsHandleCreated)BeginInvoke(new Action(()=>{if(!IsDisposed){RefreshCards();FitWidgetToDisplay();}}));}
+    protected override void WndProc(ref Message m){base.WndProc(ref m);if((m.Msg==0x7e||m.Msg==0x1a)&&IsHandleCreated&&!IsDisposed)BeginInvoke(new Action(()=>{if(!IsDisposed){RefreshCards();FitWidgetToDisplay();}}));}
     internal void RestoreWidget(){if(!owner.Preferences.WidgetEnabled)return;RefreshCards();Location=new Point(owner.Preferences.WidgetX,owner.Preferences.WidgetY);SetPinned(true);Show();}
     protected override void OnSizeChanged(EventArgs e) {
         base.OnSizeChanged(e); if(Width<24 || Height<24)return;
@@ -87,16 +87,17 @@ internal sealed class BalanceFlyout : Form
     internal void RefreshCards()
     {
         OnSizeChanged(EventArgs.Empty);Padding=owner.Theme.Border.HasValue?new Padding(3):Padding.Empty;
-        var accounts=owner.FlyoutAccounts();BackColor=owner.Theme.Surface;send.Tint=pin.Tint=owner.Theme.Secondary;send.TextMode=pin.TextMode=owner.Theme.Lofi;
+        var accounts=owner.FlyoutAccounts();BackColor=owner.Theme.Surface;send.Tint=pin.Tint=owner.Theme.Secondary;send.TextMode=pin.TextMode=!owner.Theme.GlyphControls;
         slots.UpdateAccounts(accounts,owner.SelectedAccountIndex,owner.AllAccountsSelected,BalancePresentation.Create(owner.CurrentBalance,owner.Preferences),owner.Theme.BankLogos);
         float scale=DeviceDpi/96f;
         if(owner.QuickSendAccountId==null&&quickSend!=null){quickSend.Dispose();quickSend=null;}
         int oldBottom=Bottom;Height=(int)((178+(quickSend?.PreferredHeight??0))*scale);if(Visible&&!IsPinned)Top=Math.Max(Screen.FromPoint(Location).WorkingArea.Top,oldBottom-Height);if(quickSend!=null){quickSend.SetBounds(0,(int)(178*scale),ClientSize.Width,(int)(quickSend.PreferredHeight*scale));quickSend.RefreshAccount();}slots.Visible=accounts.Count>1;
         slots.SetBounds((int)(12*scale),(int)(140*scale),ClientSize.Width-(int)((IsPinned?126:96)*scale),(int)(38*scale));
         send.SetBounds(ClientSize.Width-(int)(40*scale),(int)(143*scale),(int)(28*scale),(int)(28*scale));send.Enabled=!owner.IsLocked;pin.SetBounds(ClientSize.Width-(int)(74*scale),(int)(143*scale),(int)(28*scale),(int)(28*scale));
-        closeWidget.Tint=owner.Theme.Secondary;closeWidget.TextMode=owner.Theme.Lofi;
+        closeWidget.Tint=owner.Theme.Secondary;closeWidget.TextMode=!owner.Theme.GlyphControls;
         closeWidget.SetBounds(ClientSize.Width-(int)(106*scale),(int)(143*scale),(int)(28*scale),(int)(28*scale));closeWidget.Visible=IsPinned;closeWidget.Enabled=quickSend?.Busy!=true;
         card.Height=(int)(140*scale);card.RefreshCard();
+        if(Visible&&!dragging)FitWidgetToDisplay();
     }
 }
 internal sealed partial class MainWindow{internal void TransferFromFlyout()=>Transfer();}

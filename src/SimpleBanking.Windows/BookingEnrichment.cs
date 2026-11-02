@@ -9,7 +9,7 @@ internal static class BookingEnrichment
         else {using var stream=new MemoryStream(bytes);using var image=Image.FromStream(stream);if(image.Width>20000||image.Height>20000)throw new InvalidDataException("Bildabmessungen zu groß.");}
         return new(Guid.NewGuid().ToString("N"),Path.GetFileName(path),bytes);
     }
-    internal static Entry Preserve(Entry current,Entry old)=>current with {Category=old.Category,CategoryManual=old.CategoryManual,Note=old.Note,Read=old.Read,Flagged=old.Flagged,Attachments=old.Attachments,ReminderAt=old.ReminderAt,ReminderDone=old.ReminderDone,CustomLogo=old.CustomLogo,MerchantOverride=old.MerchantOverride};
+    internal static Entry Preserve(Entry current,Entry old)=>current with {Category=old.Category,CategoryManual=old.CategoryManual,Note=old.Note,Read=old.Read,Flagged=old.Flagged,Attachments=old.Attachments,ReminderAt=old.ReminderAt,ReminderDone=old.ReminderDone,ToDo=old.ToDo,CustomLogo=old.CustomLogo,MerchantOverride=old.MerchantOverride};
     // Match each old occurrence at most once. Ambiguous matches are left untouched rather than moving attachments to the wrong booking.
     internal static List<Entry> Reconcile(IEnumerable<Entry> oldEntries,IEnumerable<Entry> incoming,ICollection<Entry>? unmatched=null){
         var available=oldEntries.ToList();var output=new List<Entry>();
@@ -30,6 +30,7 @@ internal sealed partial class TransactionDetails
         void Commit(DateTime? at,bool done){var changed=entry with{ReminderAt=at,ReminderDone=done};save(changed);entry=changed;dialog.DialogResult=DialogResult.OK;}
         var apply=new Button{Text="Speichern",Bounds=new Rectangle(214,72,100,30)};apply.Click+=(_,_)=>Commit(when.Value,false);dialog.Controls.Add(apply);dialog.AcceptButton=apply;
         if(entry.ReminderAt!=null){var done=new Button{Text=entry.ReminderDone?"Aktivieren":"Erledigt",Bounds=new Rectangle(16,72,92,30)};done.Click+=(_,_)=>Commit(entry.ReminderAt,!entry.ReminderDone);dialog.Controls.Add(done);var remove=new Button{Text="Entfernen",Bounds=new Rectangle(114,72,94,30)};remove.Click+=(_,_)=>Commit(null,false);dialog.Controls.Add(remove);}
+        if(reminderStatus!=null){dialog.ClientSize=new(330,158);dialog.Controls.Add(new Label{Text=reminderStatus(),AutoSize=true,MaximumSize=new(298,0),Location=new(16,116),ForeColor=ThemeStyling.Current.Secondary});}
         dialog.ShowDialog(this);
     }
     void AddEnrichmentCards(FlowLayoutPanel content){

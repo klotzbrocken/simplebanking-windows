@@ -20,7 +20,7 @@ internal sealed class HeaderIcon : Button
     protected override void OnPaint(PaintEventArgs e) {
         base.OnPaintBackground(e);
         var g=e.Graphics;float extent=symbol is "subtitle" or "metrics" or "daily" or "bankfees"?18:28;g.ScaleTransform(Width/extent,Height/extent);g.SmoothingMode=SmoothingMode.AntiAlias;
-        if(TextMode){string text=symbol switch{"dashboard"=>"AUSW","inbox"=>"INBOX","send"=>"SEND","search"=>"SU","filter"=>"FIL","categories"=>"KAT","pin"=>"PIN","all"=>"ALLE",_=>"…"};using var font=new Font("Consolas",symbol=="inbox"?7:8,FontStyle.Bold,GraphicsUnit.Pixel);TextRenderer.DrawText(g,text,font,new Rectangle(0,0,(int)extent,(int)extent),Tint??Color.Blue,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);return;}
+        if(TextMode){string text=symbol switch{"dashboard"=>"AUSW","inbox"=>"INBOX","send"=>"SEND","search"=>"SU","filter"=>"FIL","categories"=>"KAT","pin"=>"PIN","all"=>"ALLE","refresh"=>"NEU","settings"=>"SET","close"=>"X","copy"=>"KOP","read"=>"LES","bell"=>"ERR","minimize"=>"—","subtitle"=>"TXT","metrics"=>"SUM","daily"=>"TAG","bankfees"=>"GEB",_=>"…"};using var font=new Font("Consolas",symbol=="inbox"?7:8,FontStyle.Bold,GraphicsUnit.Pixel);TextRenderer.DrawText(g,text,font,new Rectangle(0,0,(int)extent,(int)extent),Tint??Color.Blue,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);return;}
         using var pen=new Pen(active?.Invoke()==true?ExportDesign.Accent:Tint??Color.FromArgb(110,110,115),1.5f);
         switch(symbol) {
             case "dashboard":g.DrawRectangle(pen,5,5,7,7);g.DrawRectangle(pen,16,5,7,7);g.DrawRectangle(pen,5,16,7,7);g.DrawRectangle(pen,16,16,7,7);break;

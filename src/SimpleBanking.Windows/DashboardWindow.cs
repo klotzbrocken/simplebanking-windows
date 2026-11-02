@@ -5,7 +5,7 @@ internal sealed record AnalysisSnapshot(string Name,Account[] Accounts,Entry[] E
     internal string Currency=>Accounts.FirstOrDefault()?.Currency??"EUR";
     internal bool Mixed=>Accounts.Select(a=>a.Currency).Distinct().Count()>1;
 }
-internal sealed class DashboardWindow : Form
+internal sealed partial class DashboardWindow : Form
 {
     readonly MainWindow owner;
     readonly FlowLayoutPanel tabs=new(){Dock=DockStyle.Top,Height=50,Padding=new Padding(16,10,16,0),WrapContents=false};
@@ -19,7 +19,7 @@ internal sealed class DashboardWindow : Form
         this.owner=owner;snapshot=owner.AnalysisSnapshot();Text="simplebanking · Dashboard";ClientSize=new Size(840,620);MinimumSize=new Size(760,600);StartPosition=FormStartPosition.CenterParent;
         AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);Font=new Font("Segoe UI",13,GraphicsUnit.Pixel);BackColor=Color.FromArgb(248,250,249);
         Icon=AppArtwork.CreateTrayIcon();Disposed+=(_,_)=>Icon?.Dispose();
-        foreach(var (name,index) in new[]{("Übersicht",0),("Abos & Verträge",1),("Kalender",2),("Geld-Alter",3),("Regeln",4)}) {
+        foreach(var (name,index) in new[]{("Übersicht",0),("Abos & Verträge",1),("Kalender",2),("Geld-Alter",3),("Regeln",4),("Fixkosten",5)}) {
             int i=index;var button=ActionButton(name,()=>ShowTab(i));tabs.Controls.Add(button);tabButtons.Add(button);
         }
         Controls.Add(page);Controls.Add(tabs);owner.BalanceChanged+=Reload;FormClosed+=(_,_)=>owner.BalanceChanged-=Reload;ShowTab(tab);
@@ -27,16 +27,16 @@ internal sealed class DashboardWindow : Form
     void Reload(){if(owner.IsLocked){Close();return;}snapshot=owner.AnalysisSnapshot();ShowTab(active);}
     internal void ShowTab(int index) {
         active=index;page.SuspendLayout();foreach(Control c in page.Controls.Cast<Control>().ToArray())c.Dispose();
-        foreach(var (b,i) in tabButtons.Select((b,i)=>(b,i)))b.BackColor=i==index?Color.White:BackColor;
+        foreach(var (b,i) in tabButtons.Select((b,i)=>(b,i)))b.BackColor=i==index?ThemePalette.Blend(ThemeStyling.Current.Accent,ThemeStyling.Current.Surface,.2):ThemeStyling.Current.Panel;
         Text="simplebanking · Dashboard · "+snapshot.Name;
         if(snapshot.Mixed){page.Controls.Add(Label("Die Konten haben unterschiedliche Währungen. Bitte ein einzelnes Konto wählen.",14));page.ResumeLayout();return;}
-        switch(index){case 0:Overview();break;case 1:SubscriptionsPage();break;case 2:Calendar(snapshot.Entries);break;case 3:Age();break;case 4:Rules();break;}
-        page.ResumeLayout(true);
+        switch(index){case 0:Overview();break;case 1:SubscriptionsPage();break;case 2:Calendar(snapshot.Entries);break;case 3:Age();break;case 4:Rules();break;case 5:FixedCostsPage();break;}
+        ThemeStyling.Apply(this);page.ResumeLayout(true);
     }
     internal void ShowSubscriptionMode(string value){mode=value;ShowTab(1);}
-    internal void ShowFixedCosts(){bucket="Verbindlichkeiten";ShowTab(1);}
+    internal void ShowFixedCosts(){ShowTab(5);}
     internal static Button ActionButton(string text,Action action){var b=new Button{Text=text,UseMnemonic=false,AutoSize=true,Height=30,FlatStyle=FlatStyle.Flat,Padding=new Padding(7,3,7,3),Margin=new Padding(0,0,7,6)};b.FlatAppearance.BorderColor=Color.FromArgb(220,222,224);b.Click+=(_,_)=>action();return b;}
-    internal static Label Label(string text,float size=13,bool bold=false)=>new(){Text=text,UseMnemonic=false,AutoSize=true,BackColor=Color.Transparent,Font=new Font("Segoe UI",size,bold?FontStyle.Bold:FontStyle.Regular,GraphicsUnit.Pixel),Margin=new Padding(0,0,0,10)};
+    internal static Label Label(string text,float size=13,bool bold=false)=>new(){Text=text,UseMnemonic=false,AutoSize=true,BackColor=Color.Transparent,Font=ThemeStyling.Current.Font(size,bold),Margin=new Padding(0,0,0,10)};
     FlowLayoutPanel Stack(){var s=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};page.Controls.Add(s);return s;}
     FlowLayoutPanel Header(string title,string subtitle,Control? right=null){var h=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,WrapContents=true,Margin=Padding.Empty};var labels=new FlowLayoutPanel{AutoSize=true,FlowDirection=FlowDirection.TopDown,WrapContents=false,Margin=new Padding(0,0,20,12)};labels.Controls.Add(Label(title,20,true));labels.Controls.Add(Label(subtitle,12));h.Controls.Add(labels);if(right!=null)h.Controls.Add(right);return h;}
     List<Subscription> Candidates()=>snapshot.Accounts.SelectMany(a=>Subscriptions.Detect(snapshot.Entries.Where(e=>e.AccountId==a.Id),a.BankName??a.Name,owner.AnalysisRules,owner.AnalysisAssignments)).ToList();
@@ -49,7 +49,7 @@ internal sealed class DashboardWindow : Form
     }
     void SubscriptionsPage(){
         var all=Candidates();var items=all.Where(s=>s.Tab==bucket).ToList();var bar=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,WrapContents=true};
-        foreach(var name in new[]{"Abos","Verträge","Sparen","Verbindlichkeiten"}){var b=ActionButton(name,()=>{bucket=name;ShowTab(1);});if(name==bucket)b.BackColor=Color.White;bar.Controls.Add(b);}
+        foreach(var name in new[]{"Abos","Verträge","Sparen","Verbindlichkeiten"}){var b=ActionButton(name,()=>{bucket=name;ShowTab(1);});if(name==bucket)b.BackColor=ThemePalette.Blend(ThemeStyling.Current.Accent,ThemeStyling.Current.Surface,.2);bar.Controls.Add(b);}
         foreach(var name in new[]{"Kalender","Liste","Statistik"})bar.Controls.Add(ActionButton(name,()=>{mode=name;ShowTab(1);}));
         if(mode=="Kalender") {
             var charges=all.SelectMany(s=>s.Entries).DistinctBy(e=>e.AccountId+"/"+e.Id).ToList();
@@ -60,7 +60,7 @@ internal sealed class DashboardWindow : Form
             Calendar(charges);
         }
         else if(mode=="Statistik") {
-            var stack=Stack();var stats=new SubscriptionStatistics(all,snapshot.Currency);stack.Controls.Add(stats);stack.SizeChanged+=(_,_)=>stats.Width=Math.Max(400,stack.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-6);stats.Width=page.ClientSize.Width-60;
+            var stack=Stack();var stats=new SubscriptionStatistics(RecurringPayments(),snapshot.Currency);stack.Controls.Add(stats);stack.SizeChanged+=(_,_)=>stats.Width=Math.Max(400,stack.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-6);stats.Width=page.ClientSize.Width-60;
         } else {
             var list=new FlowLayoutPanel{Dock=DockStyle.Fill,AutoScroll=true,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(0,12,0,0)};
             bool shownPossible=false;
@@ -89,7 +89,7 @@ internal sealed class DashboardWindow : Form
     void Age(){
         var stack=Stack();var select=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,Width=160};select.Items.AddRange(["letzte 10","letzte 25","letzte 50"]);select.SelectedIndex=0;stack.Controls.Add(Label("Money Age",20,true));stack.Controls.Add(Label("Wie alt ist das Geld, das du ausgibst?"));stack.Controls.Add(select);
         var result=Label("",32,true);var coverage=Label("",14);var explanation=Label("Das älteste Geld wird zuerst ausgegeben (FIFO).\nLücken in der Historie oder Dispo können Ausgaben teilweise ungedeckt lassen.");stack.Controls.Add(result);stack.Controls.Add(coverage);stack.Controls.Add(explanation);
-        void Update(){var age=MoneyAgeResult.Calculate(snapshot.Entries,new[]{10,25,50}[select.SelectedIndex]);result.Text=age.Days is {} d?d.ToString("N1")+" Tage":"Noch keine gedeckten Ausgaben";coverage.Text=$"{age.Samples} Ausgaben im Fenster · {age.Total} insgesamt\n{age.Uncovered} teilweise oder vollständig ungedeckt"+(age.Previous is {} p?$"\nVorheriges Fenster: {p:N1} Tage":"");}select.SelectedIndexChanged+=(_,_)=>Update();Update();
+        void Update(){var age=MoneyAgeResult.Calculate(snapshot.Entries,new[]{10,25,50}[select.SelectedIndex]);result.Text=age.Days is {} d?d.ToString("N1")+" Tage · "+age.Band:"Noch keine gedeckten Ausgaben";coverage.Text=$"{age.Samples} Ausgaben im Fenster · {age.Total} insgesamt\n{age.Uncovered} teilweise oder vollständig ungedeckt"+(age.Previous is {} p?$"\nVorheriges Fenster: {p:N1} Tage · Veränderung: {age.Days-p:+0.0;-0.0;0} Tage":"")+(age.Minimum is {} min?$"\nSpanne: {min:N1} bis {age.Maximum:N1} Tage":"");}select.SelectedIndexChanged+=(_,_)=>Update();Update();
     }
     void ShowAssignments(){
         using var dialog=new Form{Text="Eigene Regeln · Zuordnungen",ClientSize=new Size(660,430),Font=Font,StartPosition=FormStartPosition.CenterParent};
@@ -109,11 +109,11 @@ internal sealed class DashboardWindow : Form
 internal sealed class MmiView(Mmi metric,string currency) : Control
 {
     protected override void OnPaint(PaintEventArgs e){
-        var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;float scale=DeviceDpi/96f;g.ScaleTransform(scale,scale);float width=Width/scale;
+        var theme=ThemeStyling.Current;var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;float scale=DeviceDpi/96f;g.ScaleTransform(scale,scale);float width=Width/scale;
         decimal total=metric.Expenses+metric.Savings+Math.Max(0,metric.Balance);float angle=-90;Color[] colors=[Color.FromArgb(207,63,70),Color.FromArgb(50,115,218),Color.FromArgb(37,142,88)];decimal[] values=[metric.Expenses,metric.Savings,Math.Max(0,metric.Balance)];
         using(var basePen=new Pen(Color.FromArgb(225,230,227),18))g.DrawEllipse(basePen,16,22,150,150);
         if(total>0)for(int i=0;i<3;i++){float sweep=(float)(values[i]/total)*360;if(sweep>0){using var pen=new Pen(colors[i],18);g.DrawArc(pen,16,22,150,150,angle,sweep);}angle+=sweep;}
-        void Text(string text,float size,float x,float y,float w,Color color,bool bold=false){using var f=new Font("Segoe UI",size,bold?FontStyle.Bold:FontStyle.Regular,GraphicsUnit.Pixel);using var b=new SolidBrush(color);g.DrawString(text,f,b,new RectangleF(x,y,w,110));}
+        void Text(string text,float size,float x,float y,float w,Color color,bool bold=false){using var f=ThemeStyling.Current.Font(size,bold);using var b=new SolidBrush(color==Color.DimGray?theme.Secondary:color==Color.FromArgb(35,40,38)?theme.Ink:theme.IsDark&&theme.IsDefault?ThemePalette.Blend(color,theme.Ink,.35):color);g.DrawString(theme.Text(text),f,b,new RectangleF(x,y,w,110));}
         Text(metric.Rating,16,35,82,135,Color.FromArgb(30,80,55),true);
         Text($"{metric.Score:N2}  Score\n{metric.SavingsRate:+0%;-0%;0%}  Sparrate\n{(double.IsInfinity(metric.Buffer)?"∞":metric.Buffer.ToString("N1"))} Mon.  Puffer",19,12,195,215,Color.FromArgb(35,80,65),true);
         Text("Money Mass Index",22,220,28,width-230,Color.FromArgb(35,40,38),true);
