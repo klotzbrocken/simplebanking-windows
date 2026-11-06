@@ -32,7 +32,7 @@ internal sealed partial class TransactionDetails : Form
         var amountCard=Card();amountCard.AutoSize=false;amountCard.Height=136;amountCard.Padding=new Padding(16);
         var merchantHeader=new Panel{Width=320,Height=52,Margin=new Padding(0,0,0,8),BackColor=Color.Transparent};amountCard.Controls.Add(merchantHeader);
         merchantHeader.Controls.Add(new Label{Text=entry.Merchant,Bounds=new Rectangle(56,0,192,25),Font=new Font("Segoe UI",16,FontStyle.Bold,GraphicsUnit.Pixel),AutoEllipsis=true});
-        merchantHeader.Controls.Add(new Label{Text="Gebucht am "+entry.Date.ToString("dd.MM.yyyy"),Bounds=new Rectangle(56,28,205,20),ForeColor=ExportDesign.Secondary,Font=new Font("Segoe UI",12,GraphicsUnit.Pixel)});
+        merchantHeader.Controls.Add(new Label{Text=(entry.Pending?"Vorgemerkt: ":entry.DateSource=="bookingDate"?"Buchungstag: ":"Bankdatum: ")+entry.Date.ToString("dd.MM.yyyy"),Bounds=new Rectangle(56,28,205,20),ForeColor=ExportDesign.Secondary,Font=new Font("Segoe UI",12,GraphicsUnit.Pixel)});
         bell.Parent=merchantHeader;bell.Location=new Point(256,0);read.Parent=merchantHeader;read.Location=new Point(288,0);
         var logo=MerchantArtwork.Load(entry);
         var artwork=new Button {Width=48,Height=48,FlatStyle=FlatStyle.Flat,BackColor=Color.White,Cursor=Cursors.Hand,AccessibleName="Händlerlogo ändern",Margin=new Padding(0,0,16,0)};artwork.FlatAppearance.BorderSize=0;
@@ -48,6 +48,8 @@ internal sealed partial class TransactionDetails : Form
             dates.Controls.Add(new Label{Name=i==1?"ValueDate":"BookingDate",Text=dateValues[i].Item2,Bounds=new Rectangle(i*160,25,156,25),BackColor=Color.Transparent,Font=new Font("Segoe UI",14,GraphicsUnit.Pixel)});
         }
         details.Controls.Add(dates);
+        if(entry.DateSource!="bookingDate")Label(details,entry.DateSource=="valueDate"?"Kein Buchungstag geliefert; Anzeige verwendet die Wertstellung.":"Kein Buchungstag geliefert; Anzeige verwendet das Transaktionsdatum.",11);
+        if(entry.Date>DateOnly.FromDateTime(DateTime.Today))Label(details,"Die Bank liefert ein zukünftiges Datum. Der Eintrag zählt noch nicht zu bereits gebuchten Ausgaben.",11);
         Label(details,"Verwendungszweck",12);
         string purpose=string.IsNullOrWhiteSpace(entry.Purpose)?"—":entry.Purpose;
         int purposeHeight=Math.Clamp(TextRenderer.MeasureText(purpose,Font,new Size(320,0),TextFormatFlags.WordBreak|TextFormatFlags.TextBoxControl).Height+8,28,100);

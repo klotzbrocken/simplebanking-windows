@@ -1,6 +1,8 @@
 # Stand der Windows-Portierung — 0.21.0, 28.10.2026
 
-Aktueller Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md), einschließlich Bankfreigaben, Fixkosten, Banklogos, Sicherungen und lesenden CLI/MCP-Auswertungen. Ursprüngliche Referenz: Mac-Quellcode 2.0.7, Commit 933e158 (vollständige Herkunft unter provenance.json), ursprüngliche Assets und Yaxi SDK 0.2.0. Designreferenz zusätzlich: Desktop/export, insbesondere kombinierte Filter und Passwort-/Hello-Dialog (0.15–0.16, einschließlich Details, Tastenkappen und About-Karten). Eigene Themes: [Sammlung und Verwaltung](THEME-LIBRARY.md). Diese aktuelle Matrix ersetzt die früheren Fortschrittslisten. **Vollständige Funktions- und Designparität ist nicht erreicht.**
+Zusätzliche Korrekturen vom 06.11.2026: [Buchungen, Hello, MCP und fünf weitere Mac-Commits bis ba249b40](NOVEMBER-2026.md). Persönliche Hello-/Bankabnahme bleibt offen.
+
+Vorheriger Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md), einschließlich Bankfreigaben, Fixkosten, Banklogos, Sicherungen und lesenden CLI/MCP-Auswertungen. Ursprüngliche Referenz: Mac-Quellcode 2.0.7, Commit 933e158 (vollständige Herkunft unter provenance.json), ursprüngliche Assets und Yaxi SDK 0.2.0. Designreferenz zusätzlich: Desktop/export, insbesondere kombinierte Filter und Passwort-/Hello-Dialog (0.15–0.16, einschließlich Details, Tastenkappen und About-Karten). Eigene Themes: [Sammlung und Verwaltung](THEME-LIBRARY.md). Diese aktuelle Matrix ersetzt die früheren Fortschrittslisten. **Vollständige Funktions- und Designparität ist nicht erreicht.**
 
 | Bereich | Implementiert | Grenze / noch offen |
 |---|---|---|

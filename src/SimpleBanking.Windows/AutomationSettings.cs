@@ -10,10 +10,10 @@ internal sealed partial class MainWindow
         actions.Controls.Add(DashboardWindow.ActionButton("Client hinzufügen",()=>{
             using var editor=new AutomationClientEditor(data.Accounts);if(editor.ShowDialog(window)!=DialogResult.OK||editor.Result is not {} result||!Unlocked)return;
             data.AutomationClients.Add(result.Client);try{Save();}catch{data.AutomationClients.Remove(result.Client);throw;}Reload();
-            using var secret=new Form{Text="Client-Token · Einmalige Anzeige",ClientSize=new(650,280),StartPosition=FormStartPosition.CenterParent,Padding=new(18)};
-            var text=new TextBox{Multiline=true,ReadOnly=true,Dock=DockStyle.Fill,Text="Token sicher beim MCP-Client hinterlegen. Er wird nicht erneut angezeigt.\r\n\r\nSIMPLEBANKING_TOKEN="+result.Token+"\r\n\r\nProgramm: "+Environment.ProcessPath+"\r\nArgument: --mcp"};secret.Controls.Add(text);
+            using var secret=new Form{Text="Client-Token · Einmalige Anzeige",ClientSize=new(700,420),StartPosition=FormStartPosition.CenterParent,Padding=new(18)};
+            var text=new TextBox{Multiline=true,ReadOnly=true,Dock=DockStyle.Fill,Text="App entsperrt lassen und CLI/MCP unter Extras aktivieren. Diese Konfiguration enthält den einmaligen Token.\r\n\r\n"+LocalAutomation.ClientConfiguration(Environment.ProcessPath!,result.Token)};secret.Controls.Add(text);
             secret.Controls.Add(new Label{Text="Einrichtung: Programm + --mcp, Umgebungsvariable SIMPLEBANKING_TOKEN",Dock=DockStyle.Top,AutoSize=true});
-            var copy=DashboardWindow.ActionButton("Token kopieren",()=>Clipboard.SetText(result.Token));copy.Dock=DockStyle.Bottom;secret.Controls.Add(copy);secret.ShowDialog(window);
+            var copy=DashboardWindow.ActionButton("Token kopieren",()=>Clipboard.SetText(result.Token));copy.Dock=DockStyle.Bottom;secret.Controls.Add(copy);var config=DashboardWindow.ActionButton("MCP-Konfiguration kopieren",()=>Clipboard.SetText(LocalAutomation.ClientConfiguration(Environment.ProcessPath!,result.Token)));config.Dock=DockStyle.Bottom;secret.Controls.Add(config);secret.ShowDialog(window);
         }));
         actions.Controls.Add(DashboardWindow.ActionButton("Zugriff widerrufen",()=>{if(table.CurrentRow?.Tag is not AutomationClient c||!Unlocked)return;int i=data.AutomationClients.IndexOf(c);data.AutomationClients[i]=c with{Revoked=true};try{Save();}catch{data.AutomationClients[i]=c;throw;}Reload();}));
         window.Controls.Add(actions);Reload();window.ShowDialog(this);

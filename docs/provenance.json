@@ -21,5 +21,13 @@
     "commits": 23,
     "head": "9be7a2505e773c3aef138881c8a29822be0fe187",
     "date": "2026-10-12"
+  },
+  "macReviewNovember": {
+    "report": "NOVEMBER-2026.md",
+    "windowsBase": "09a0ed6331184da1f05c97c4f516d7e7771cfadf",
+    "base": "9be7a2505e773c3aef138881c8a29822be0fe187",
+    "head": "ba249b403f66b8a28f3f138d7d6ffeb200992772",
+    "commits": 5,
+    "date": "2026-11-06"
   }
 }
