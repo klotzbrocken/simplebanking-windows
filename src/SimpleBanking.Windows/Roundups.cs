@@ -3,7 +3,7 @@ public sealed record RoundupResolution(string Id,string AccountId,List<DateOnly>
 internal static class RoundupMath
 {
     internal static int Cents(decimal amount,int step){if(amount>=0||step<=0)return 0;decimal cents=decimal.Round(-amount*100,0,MidpointRounding.AwayFromZero);decimal remainder=cents%step;return remainder==0?0:(int)(step-remainder);}
-    internal static Dictionary<DateOnly,decimal> Days(IEnumerable<Entry> entries,int step,string savingsIban,ISet<DateOnly> excluded)=>entries.Where(e=>!e.Pending&&e.Currency=="EUR"&&e.Amount<0&&!excluded.Contains(e.Date)&&(savingsIban.Length==0||BankingRules.NormalizeIban(e.CounterpartyIban)!=savingsIban)).GroupBy(e=>e.Date).ToDictionary(g=>g.Key,g=>g.Sum(e=>Cents(e.Amount,step))/100m);
+    internal static Dictionary<DateOnly,decimal> Days(IEnumerable<Entry> entries,int step,string savingsIban,ISet<DateOnly> excluded)=>entries.Where(e=>!e.Pending&&e.Date<=DateOnly.FromDateTime(DateTime.Today)&&e.Currency=="EUR"&&e.Amount<0&&!excluded.Contains(e.Date)&&(savingsIban.Length==0||BankingRules.NormalizeIban(e.CounterpartyIban)!=savingsIban)).GroupBy(e=>e.Date).ToDictionary(g=>g.Key,g=>g.Sum(e=>Cents(e.Amount,step))/100m);
 }
 internal sealed partial class MainWindow
 {

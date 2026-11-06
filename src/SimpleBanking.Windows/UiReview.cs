@@ -253,6 +253,13 @@ internal static class UiReview
         using(var transfer=new TransferWindow(DemoData.Create().Accounts[0],DemoData.Create().PaymentTemplates[0].Draft,true)){
             Capture(transfer,"transfer-demo");transfer.Show();Descendants(transfer).OfType<Button>().Single(b=>b.Text=="Demo-Versand prüfen").PerformClick();if(!transfer.SendRequested||transfer.Draft?.Amount!=25)throw new InvalidOperationException("Demo transfer review did not preserve draft.");transfer.Hide();
         }
+        using(var transfer=new TransferWindow(DemoData.Create().Accounts[0],DemoData.Create().PaymentTemplates[0].Draft,true)){
+            transfer.Show();var instant=Descendants(transfer).OfType<CheckBox>().Single(c=>c.AccessibleName=="Nur Echtzeit");
+            instant.Checked=true;Capture(transfer,"transfer-instant-only");
+            var date=Descendants(transfer).OfType<DateTimePicker>().Single();date.Checked=true;date.Value=DateTime.Today.AddDays(1);Application.DoEvents();
+            if(instant.Enabled||instant.Checked)throw new InvalidOperationException("Scheduled transfer retained instant-only mode.");
+            transfer.Close();
+        }
         string selectedTheme=main.Preferences.ThemeId;using var settings = new SettingsWindow(main); Capture(settings, "settings");
         settings.ShowReviewTab(3); Capture(settings,"settings-behavior");if(main.Preferences.ThemeId!=selectedTheme)throw new InvalidOperationException("Opening settings changed the selected theme.");
         settings.ShowReviewTab(1); Capture(settings,"settings-accounts");

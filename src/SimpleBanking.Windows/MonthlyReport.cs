@@ -14,7 +14,7 @@ internal static class MonthlyReport
         public FontResolverInfo? ResolveTypeface(string familyName,bool bold,bool italic)=>new(bold?"SpaceMono-Bold":"SpaceMono-Regular");
         public byte[] GetFont(string faceName){var assembly=typeof(MonthlyReport).Assembly;using var stream=assembly.GetManifestResourceStream(assembly.GetManifestResourceNames().Single(n=>n.EndsWith(faceName+".ttf")))!;using var memory=new MemoryStream();stream.CopyTo(memory);return memory.ToArray();}
     }
-    internal static Entry[] Rows(IEnumerable<Entry> all,DateOnly month)=>all.Where(e=>!e.Pending&&e.Date.Year==month.Year&&e.Date.Month==month.Month).OrderBy(e=>e.Date).ThenBy(e=>e.Id,StringComparer.Ordinal).ToArray();
+    internal static Entry[] Rows(IEnumerable<Entry> all,DateOnly month)=>all.Where(e=>!e.Pending&&e.Date<=DateOnly.FromDateTime(DateTime.Today)&&e.Date.Year==month.Year&&e.Date.Month==month.Month).OrderBy(e=>e.Date).ThenBy(e=>e.Id,StringComparer.Ordinal).ToArray();
     internal static void Write(string path,Account account,IEnumerable<Entry> history,DateOnly month){
         if(GlobalFontSettings.FontResolver==null)GlobalFontSettings.FontResolver=new Fonts();
         var all=history.Where(e=>e.AccountId==account.Id&&e.Currency==account.Currency).ToArray();var rows=Rows(all,month);

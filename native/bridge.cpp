@@ -83,7 +83,10 @@ json call(yaxi::RoutexClient& client,const json& j) {
         std::optional<std::chrono::time_point<std::chrono::system_clock>> execution;
         if(j.contains("executionUnix")&&!j["executionUnix"].is_null())execution=std::chrono::system_clock::time_point(std::chrono::seconds(j["executionUnix"].get<int64_t>()));
         yaxi::AccountReference debtor{j.at("debtorIban"),opt<std::string>(j,"debtorCurrency")};
-        return result(client.transfer(credentials,ticket,yaxi::PaymentProduct::DefaultSepaCreditTransfer,{details},debtor,std::nullopt,execution,session),response);
+        const bool instantOnly=j.value("instantOnly",false);
+        if(instantOnly && execution)throw std::invalid_argument("Instant transfer cannot be scheduled");
+        auto product=instantOnly?yaxi::PaymentProduct::SepaInstantCreditTransfer:yaxi::PaymentProduct::DefaultSepaCreditTransfer;
+        return result(client.transfer(credentials,ticket,product,{details},debtor,std::nullopt,execution,session),response);
     }
     throw std::invalid_argument("Unknown operation");
 }

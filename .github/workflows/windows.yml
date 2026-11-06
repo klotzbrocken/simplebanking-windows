@@ -54,6 +54,9 @@ jobs:
         run: |
           dotnet app/simplebanking.dll --benchmark-vault .build/vault-benchmark.json
           if ($LASTEXITCODE -ne 0) { throw 'Large vault regression failed' }
+      - name: Verify MCP subprocess transport
+        shell: pwsh
+        run: ./scripts/test-mcp.ps1 -Executable "$PWD/app/simplebanking.exe"
       - uses: actions/upload-artifact@v4
         with:
           name: simplebanking-windows-${{ github.run_number }}

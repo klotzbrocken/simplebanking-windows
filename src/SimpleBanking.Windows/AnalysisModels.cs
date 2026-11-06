@@ -35,7 +35,7 @@ internal static class Subscriptions
     static Cancellation[] Load(){using var stream=typeof(Subscriptions).Assembly.GetManifestResourceStream("SimpleBanking.Cancellation.json")!;return System.Text.Json.JsonSerializer.Deserialize<Cancellation[]>(stream)!;}
     internal static string Frequency(PaymentFrequency frequency)=>frequency switch{PaymentFrequency.Monthly=>"Monatlich",PaymentFrequency.Quarterly=>"Vierteljährlich",PaymentFrequency.Yearly=>"Jährlich",_=>"Unregelmäßig"};
     internal static List<Subscription> Detect(IEnumerable<Entry> source,string? bankName=null,IReadOnlyList<AssignmentRule>? rules=null,IReadOnlyDictionary<string,string>? assignments=null) {
-        var list=source.Where(e=>!e.Pending&&e.Amount<0&&!new[]{"erstattung","rückzahlung","retoure","umbuchung","übertrag auf konto"}.Any(e.Purpose.ToLowerInvariant().Contains)).ToList();
+        var list=source.Where(e=>!e.Pending&&e.Date<=DateOnly.FromDateTime(DateTime.Today)&&e.Amount<0&&!new[]{"erstattung","rückzahlung","retoure","umbuchung","übertrag auf konto"}.Any(e.Purpose.ToLowerInvariant().Contains)).ToList();
         string Group(Entry e){
             if(RecurringCosts.BankFee(e,bankName))return "Bankgebühren";
             var merchant=RecurringCosts.Merchant(e);var category=RecurringCosts.Category(merchant);
@@ -91,7 +91,7 @@ internal sealed record MoneyAgeResult(double? Days,int Samples,int Total,int Unc
     internal string Band=>Days is not {} d?"Noch keine Daten":d<15?"Eingang zu Ausgang":d<30?"Solide, aber eng":d<60?"Du hast Puffer":"Du lebst einen Monat voraus";
     internal static MoneyAgeResult Calculate(IEnumerable<Entry> entries,int size=10) {
         var funds=new LinkedList<(DateOnly Date,decimal Amount)>();var ages=new List<double>();int total=0,uncovered=0;
-        foreach(var e in entries.Where(e=>!e.Pending).OrderBy(e=>e.Date)) {
+        foreach(var e in entries.Where(e=>!e.Pending&&e.Date<=DateOnly.FromDateTime(DateTime.Today)).OrderBy(e=>e.Date)) {
             if(e.Amount>0){funds.AddLast((e.Date,e.Amount));continue;}if(e.Amount==0)continue;
             total++;decimal remaining=-e.Amount,weighted=0,consumed=0;
             while(remaining>0&&funds.First is {} first){decimal take=Math.Min(first.Value.Amount,remaining);weighted+=take*Math.Max(0,e.Date.DayNumber-first.Value.Date.DayNumber);consumed+=take;remaining-=take;if(take==first.Value.Amount)funds.RemoveFirst();else first.Value=(first.Value.Date,first.Value.Amount-take);}

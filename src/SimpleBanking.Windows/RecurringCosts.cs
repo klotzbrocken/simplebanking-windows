@@ -44,7 +44,7 @@ internal static class RecurringCosts
         return bankName!=null && Tokens(party).Intersect(Tokens(bankName)).Any();
     }
     internal static List<RecurringPayment> Analyze(IEnumerable<Entry> entries,string? bankName=null,ISet<string>? excluded=null) {
-        var groups=entries.Where(e=>e.Amount<0&&!e.Pending).GroupBy(e=>{
+        var groups=entries.Where(e=>e.Amount<0&&!e.Pending&&e.Date<=DateOnly.FromDateTime(DateTime.Today)).GroupBy(e=>{
             if(BankFee(e,bankName))return "Bankgebühren";
             var merchant=Merchant(e);var iban=e.CounterpartyIban;
             return Category(merchant)!="other" || iban.Length==0?merchant:merchant+"|"+iban[^Math.Min(8,iban.Length)..];

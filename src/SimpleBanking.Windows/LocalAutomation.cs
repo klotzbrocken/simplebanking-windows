@@ -5,6 +5,11 @@ using System.Text.Json.Nodes;
 namespace SimpleBanking;
 internal static class LocalAutomation
 {
+    internal static string? ClientToken(string? windows,string? mac) {
+        if(!string.IsNullOrEmpty(windows)&&!string.IsNullOrEmpty(mac)&&windows!=mac)throw new InvalidOperationException("SIMPLEBANKING_TOKEN und SIMPLEBANKING_MCP_TOKEN widersprechen sich.");
+        return string.IsNullOrEmpty(windows)?mac:windows;
+    }
+    internal static string ClientConfiguration(string executable,string token)=>JsonSerializer.Serialize(new{mcpServers=new{simplebanking=new{command=executable,args=new[]{"--mcp"},env=new Dictionary<string,string>{{"SIMPLEBANKING_TOKEN",token}}}}},new JsonSerializerOptions{WriteIndented=true});
     internal const string PipeName="simplebanking-windows-readonly-v1";
     internal static readonly string[] ToolNames=["get_accounts","get_transactions","get_spending_summary","get_monthly_overview","get_categories","get_merchants","get_fixed_costs","get_subscriptions"];
     static JsonObject Schema(string name) {
@@ -34,7 +39,7 @@ internal static class LocalAutomation
         var from=args["date_from"] is {} start?DateOnly.ParseExact(start.GetValue<string>(),"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture):today.AddDays(1-days);
         var to=args["date_to"] is {} finish?DateOnly.ParseExact(finish.GetValue<string>(),"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture):today;
         if(from>to)throw new InvalidDataException("Ungültiger Zeitraum");
-        var rows=data.Entries.Where(e=>(account==null||e.AccountId==account)&&e.Date>=from&&e.Date<=to
+        var rows=data.Entries.Where(e=>(account==null||e.AccountId==account)&&e.Date>=from&&e.Date<=to&&(name=="get_transactions"||e.Date<=today)
             &&(args["currency"]==null||e.Currency==args["currency"]!.GetValue<string>())
             &&(args["category"]==null||e.Category==args["category"]!.GetValue<string>())
             &&(args["search"]==null||(e.Merchant+" "+e.Purpose).Contains(args["search"]!.GetValue<string>(),StringComparison.OrdinalIgnoreCase))
@@ -73,21 +78,57 @@ internal static class LocalAutomation
     }
     static async Task<JsonNode?> Call(bool demo,string name,JsonObject args){
         if(demo){if(name=="list_tools")return JsonSerializer.SerializeToNode(ToolDefinitions(ToolNames));return JsonSerializer.SerializeToNode(Query(DemoData.Create(),name,args));}
-        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(5));using var pipe=new NamedPipeClientStream(".",PipeName,PipeDirection.InOut,PipeOptions.Asynchronous|PipeOptions.CurrentUserOnly);await pipe.ConnectAsync(timeout.Token);using var writer=new StreamWriter(pipe,new UTF8Encoding(false),leaveOpen:true){AutoFlush=true};using var reader=new StreamReader(pipe,Encoding.UTF8,leaveOpen:true);await writer.WriteLineAsync(new JsonObject{["name"]=name,["arguments"]=args.DeepClone(),["token"]=Environment.GetEnvironmentVariable("SIMPLEBANKING_TOKEN")}.ToJsonString());string? line=await reader.ReadLineAsync(timeout.Token);var response=JsonNode.Parse(line??"null");if(response?["error"] is {} error)throw new InvalidOperationException(error.GetValue<string>());return response?["result"]?.DeepClone();
+        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(5));using var pipe=new NamedPipeClientStream(".",PipeName,PipeDirection.InOut,PipeOptions.Asynchronous|PipeOptions.CurrentUserOnly);await pipe.ConnectAsync(timeout.Token);using var writer=new StreamWriter(pipe,new UTF8Encoding(false),leaveOpen:true){AutoFlush=true};using var reader=new StreamReader(pipe,Encoding.UTF8,leaveOpen:true);await writer.WriteLineAsync(new JsonObject{["name"]=name,["arguments"]=args.DeepClone(),["token"]=ClientToken(Environment.GetEnvironmentVariable("SIMPLEBANKING_TOKEN"),Environment.GetEnvironmentVariable("SIMPLEBANKING_MCP_TOKEN"))}.ToJsonString());string? line=await reader.ReadLineAsync(timeout.Token);var response=JsonNode.Parse(line??"null");if(response?["error"] is {} error)throw new InvalidOperationException(error.GetValue<string>());return response?["result"]?.DeepClone();
     }
     internal static int RunCli(string[] args){try{int index=Array.IndexOf(args,"--cli");string name=args.ElementAtOrDefault(index+1)??"get_accounts";name=name switch{"fixed"=>"get_fixed_costs","subs"=>"get_subscriptions",_=>name};var options=args.ElementAtOrDefault(index+2) is {} json&&json.StartsWith('{')?JsonNode.Parse(json)!.AsObject():new JsonObject();Console.WriteLine(Call(args.Contains("--demo"),name,options).GetAwaiter().GetResult()?.ToJsonString());return 0;}catch(Exception ex){Console.Error.WriteLine("Abfrage nicht verfügbar: "+ex.GetType().Name+". App entsperren, CLI/MCP einschalten und SIMPLEBANKING_TOKEN für einen freigegebenen Client setzen.");return 1;}}
     internal static int RunMcp(bool demo){
-        Console.InputEncoding=Encoding.UTF8;Console.OutputEncoding=new UTF8Encoding(false);string? line;bool initialized=false;
-        while(true){try{line=ReadRequest(Console.In,CancellationToken.None).GetAwaiter().GetResult();}catch(InvalidDataException){return 1;}if(line==null)break;JsonNode? id=null;try{if(line.Length>65536)throw new InvalidDataException("Anfrage zu groß");var request=JsonNode.Parse(line)!.AsObject();id=request["id"]?.DeepClone();if(id==null)continue;string method=request["method"]!.GetValue<string>();object result;
-            if(method=="initialize"){initialized=true;result=new{protocolVersion="2025-06-18",capabilities=new{tools=new{}},serverInfo=new{name="simplebanking-windows",version=typeof(LocalAutomation).Assembly.GetName().Version?.ToString()??"unknown"}};}
-            else if(method=="ping")result=new{};
-            else if(!initialized)throw new InvalidOperationException("Initialize erforderlich");
-            else if(method=="tools/list")result=Call(demo,"list_tools",new()).GetAwaiter().GetResult()??throw new InvalidOperationException("Client nicht verfügbar");
-            else if(method=="tools/call"){try{var parameters=request["params"]!;var value=Call(demo,parameters["name"]!.GetValue<string>(),parameters["arguments"]?.AsObject()??new()).GetAwaiter().GetResult();result=new{content=new[]{new{type="text",text=value?.ToJsonString()??"null"}},isError=false};}catch(Exception){result=new{content=new[]{new{type="text",text="Abfrage nicht verfügbar. App entsperren und CLI/MCP einschalten; Client-Token und Berechtigungen prüfen."}},isError=true};}}
-            else{Console.WriteLine(new JsonObject{["jsonrpc"]="2.0",["id"]=id,["error"]=new JsonObject{["code"]=-32601,["message"]="Method not found"}}.ToJsonString());continue;}
-            Console.WriteLine(new JsonObject{["jsonrpc"]="2.0",["id"]=id,["result"]=JsonSerializer.SerializeToNode(result)}.ToJsonString());
-        }catch(Exception){Console.WriteLine(new JsonObject{["jsonrpc"]="2.0",["id"]=id,["error"]=new JsonObject{["code"]=-32600,["message"]="Invalid request"}}.ToJsonString());}}
-        return 0;
+        Console.InputEncoding=Encoding.UTF8;Console.OutputEncoding=new UTF8Encoding(false);
+        return RunMcp(Console.In,Console.Out,(name,args)=>Call(demo,name,args).GetAwaiter().GetResult());
+    }
+    internal static int RunMcp(TextReader input,TextWriter output,Func<string,JsonObject,JsonNode?> call){
+        bool initialized=false;
+        void Error(JsonNode? id,int code,string message)=>output.WriteLine(new JsonObject{["jsonrpc"]="2.0",["id"]=id?.DeepClone(),["error"]=new JsonObject{["code"]=code,["message"]=message}}.ToJsonString());
+        while(true){
+            string? line;
+            try{line=ReadRequest(input,CancellationToken.None).GetAwaiter().GetResult();}catch(InvalidDataException){return 1;}
+            if(line==null)return 0;
+            JsonNode? id=null;JsonObject request;
+            try{request=JsonNode.Parse(line) as JsonObject??throw new InvalidDataException();}
+            catch(JsonException){Error(null,-32700,"Parse error");continue;}
+            catch(InvalidDataException){Error(null,-32600,"Invalid request");continue;}
+            try{
+                id=request["id"]?.DeepClone();
+                if(request["jsonrpc"]?.GetValue<string>()!="2.0"||request["method"] is not JsonValue methodNode||!methodNode.TryGetValue<string>(out var method)||
+                    (id!=null&&(id is not JsonValue identifier||(!identifier.TryGetValue<string>(out _)&&!identifier.TryGetValue<long>(out _))))) {
+                    Error(null,-32600,"Invalid request");continue;
+                }
+                // Notifications never receive a response, including unknown notifications.
+                if(id==null)continue;
+                object result;
+                if(method=="initialize"){
+                    if(initialized){Error(id,-32600,"Already initialized");continue;}
+                    if(request["params"] is not JsonObject init||init["protocolVersion"] is not JsonValue version||!version.TryGetValue<string>(out var requested)||
+                        init["capabilities"] is not JsonObject||init["clientInfo"] is not JsonObject){Error(id,-32602,"Invalid initialization parameters");continue;}
+                    initialized=true;
+                    string protocol=requested is "2024-11-05" or "2025-03-26" or "2025-06-18"?requested:"2025-06-18";
+                    result=new{protocolVersion=protocol,capabilities=new{tools=new{}},serverInfo=new{name="simplebanking-windows",version=typeof(LocalAutomation).Assembly.GetName().Version?.ToString()??"unknown"}};
+                }
+                else if(method=="ping")result=new{};
+                else if(!initialized){Error(id,-32002,"Initialize required");continue;}
+                else if(method=="tools/list"){
+                    try{result=call("list_tools",new())??throw new InvalidOperationException();}
+                    catch{Error(id,-32000,"App entsperren, CLI/MCP aktivieren und Client-Token/Berechtigungen prüfen.");continue;}
+                }
+                else if(method=="tools/call"){
+                    if(request["params"] is not JsonObject parameters||parameters["name"] is not JsonValue tool||!tool.TryGetValue<string>(out var name)||
+                        (parameters["arguments"]!=null&&parameters["arguments"] is not JsonObject)){Error(id,-32602,"Invalid tool parameters");continue;}
+                    try{var value=call(name,parameters["arguments"]?.AsObject()??new());result=new{content=new[]{new{type="text",text=value?.ToJsonString()??"null"}},isError=false};}
+                    catch{result=new{content=new[]{new{type="text",text="Abfrage nicht verfügbar. App entsperren, CLI/MCP aktivieren und Client-Token/Berechtigungen prüfen."}},isError=true};}
+                }
+                else{Error(id,-32601,"Method not found");continue;}
+                output.WriteLine(new JsonObject{["jsonrpc"]="2.0",["id"]=id,["result"]=JsonSerializer.SerializeToNode(result)}.ToJsonString());output.Flush();
+            }catch(Exception){Error(id,-32600,"Invalid request");}
+        }
     }
 }
 internal sealed partial class MainWindow

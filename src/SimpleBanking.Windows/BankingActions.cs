@@ -66,19 +66,20 @@ internal sealed partial class MainWindow
             var tx = TicketClient.DecodeJwt(transactions["jwt"]!.GetValue<string>())["data"]!["data"] as JsonArray
                 ?? throw new InvalidDataException("Keine vollständige Umsatzliste erhalten.");
             var entries = BankMapping.Entries(tx, account);
-            data.Accounts[index]=OwnPartyRegistry.Learn(data.Accounts[index],tx);
-            // Reconcile only the exact requested account/range after successful full parsing.
+            // Capture current user edits after the asynchronous fetch has completed.
             var previous = data.Entries.Where(e => e.AccountId == account.Id).ToDictionary(e => e.Id);
-            var unmatched=new List<Entry>();
-            entries = BookingEnrichment.Reconcile(previous.Values.Where(e=>e.Date>=from&&e.Date<=to).Concat(data.UnmatchedEnrichments.Where(e=>e.AccountId==account.Id)).DistinctBy(e=>e.Id), entries,unmatched);
-            data.UnmatchedEnrichments.RemoveAll(e=>e.AccountId==account.Id);data.UnmatchedEnrichments.AddRange(unmatched);
-            data.Entries.RemoveAll(e => e.AccountId == account.Id && e.Date >= from && e.Date <= to);
-            foreach (var e in entries) { data.Entries.RemoveAll(old => old.AccountId == account.Id && old.Id == e.Id); data.Entries.Add(e); }
-            ApplyAnalysisRules(new HashSet<string>{account.Id},true);
+            var oldEntries=data.Entries;var oldUnmatched=data.UnmatchedEnrichments;var oldAccount=data.Accounts[index];var oldAssignments=new Dictionary<string,string>(data.RecurringAssignments);
+            var refreshed=BookingEnrichment.Refresh(oldEntries,oldUnmatched,entries,account.Id,from,to);
             bool hasNewBookings=entries.Any(e=>!previous.ContainsKey(e.Id));
             var connectionIndex=data.Connections.FindIndex(c=>c.Id==connection.Id);
-            data.Connections[connectionIndex]=connection with{ApprovalRequired=false};
-            Save(); Populate(); if(hasNewBookings)NewBookings?.Invoke(); status.Text = "Aktualisiert · " + DateTime.Now.ToString("g") + ".";
+            var oldConnection=data.Connections[connectionIndex];
+            try {
+                data.Entries=refreshed.Entries;data.UnmatchedEnrichments=refreshed.Unmatched;
+                data.Accounts[index]=OwnPartyRegistry.Learn(oldAccount,tx);
+                ApplyAnalysisRules(new HashSet<string>{account.Id},true);
+                data.Connections[connectionIndex]=connection with{ApprovalRequired=false};Save();
+            } catch {data.Entries=oldEntries;data.UnmatchedEnrichments=oldUnmatched;data.RecurringAssignments=oldAssignments;data.Accounts[index]=oldAccount;data.Connections[connectionIndex]=oldConnection;throw;}
+            Populate(); if(hasNewBookings)NewBookings?.Invoke(); status.Text = "Aktualisiert · " + DateTime.Now.ToString("g") + ".";
             categorizeIds=entries.Where(e=>!previous.ContainsKey(e.Id)).Select(e=>e.Id).ToHashSet();
         }
         catch (BankApprovalRequiredException) {
@@ -95,11 +96,23 @@ internal sealed partial class MainWindow
 
 internal static class BankMapping
 {
-    public static decimal? Balance(JsonNode payload, Account account)
+    public static decimal? Balance(JsonNode payload, Account account,DateTimeOffset? now=null)
     {
         var matched = payload["balances"]?.AsArray().FirstOrDefault(b => BankingRules.NormalizeIban(b?["account"]?["iban"]?.GetValue<string>() ?? "") == account.Iban);
-        var booked = matched?["balances"]?.AsArray().FirstOrDefault(b => b?["balanceType"]?.GetValue<string>() == "Booked" && b?["currency"]?.GetValue<string>() == account.Currency);
-        return booked == null ? null : decimal.Parse(booked["amount"]!.GetValue<string>(), CultureInfo.InvariantCulture);
+        var instant=now??DateTimeOffset.UtcNow;
+        var selected=matched?["balances"]?.AsArray()
+            .Where(b=>b?["currency"]?.GetValue<string>()==account.Currency&&b?["balanceType"]?.GetValue<string>() is "Booked" or "Available")
+            .Select(b=>new{Row=b!,At=BalanceDate(b!["dateTime"])})
+            .Where(b=>b.At==null||b.At<=instant)
+            .OrderBy(b=>b.Row["creditLimitIncluded"]?.GetValue<bool>()==true)
+            .ThenByDescending(b=>b.At)
+            .ThenBy(b=>b.Row["balanceType"]!.GetValue<string>()!="Booked").FirstOrDefault();
+        return selected==null?null:decimal.Parse(selected.Row["amount"]!.GetValue<string>(),CultureInfo.InvariantCulture);
+    }
+    static DateTimeOffset? BalanceDate(JsonNode? node) {
+        if(node==null)return null;
+        if(!DateTimeOffset.TryParse(node.GetValue<string>(),CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal,out var value))throw new InvalidDataException("Ungültiger Saldo-Stichtag.");
+        return value;
     }
     public static List<Entry> Entries(JsonArray input, Account account)
     {
@@ -125,7 +138,7 @@ internal static class BankMapping
                 string.Equals(n["status"]?.GetValue<string>(),"Pending",StringComparison.OrdinalIgnoreCase),
                 ValueDate: valueDate, CounterpartyIban: party?["iban"]?.GetValue<string>() ?? "", CounterpartyBic: party?["bic"]?.GetValue<string>() ?? "",
                 AdditionalInformation: n["additionalInformation"]?.GetValue<string>() ?? "", PurposeCode: n["purposeCode"]?.GetValue<string>() ?? "", BankCounterpartyName: party?["name"]?.GetValue<string>() ?? "", EndToEndId: n["endToEndId"]?.GetValue<string>() ?? "",
-                BankTransactionCode: BankBookingCode.Compact(n["bankTransactionCodes"]??n["bankTransactionCode"])));
+                BankTransactionCode: BankBookingCode.Compact(n["bankTransactionCodes"]??n["bankTransactionCode"]),DateSource:n["bookingDate"]!=null?"bookingDate":n["valueDate"]!=null?"valueDate":"transactionDate"));
         }
         return output;
     }

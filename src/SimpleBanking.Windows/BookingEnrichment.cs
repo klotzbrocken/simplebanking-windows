@@ -2,6 +2,19 @@ namespace SimpleBanking;
 
 internal static class BookingEnrichment
 {
+    internal static bool HasLocalData(Entry e)=>e.Read||e.Flagged||e.Note.Length>0||e.Attachments?.Count>0||e.ReminderAt!=null||e.CustomLogo!=null||e.CategoryManual||e.MerchantOverride!=null||e.ToDo!=null||e.Category is not ("" or "Unkategorisiert");
+    internal static (List<Entry> Entries,List<Entry> Unmatched) Refresh(IEnumerable<Entry> existing,IEnumerable<Entry> orphaned,IEnumerable<Entry> incoming,string accountId,DateOnly from,DateOnly to) {
+        var old=existing.ToList();var priorOrphans=orphaned.ToList();var rows=incoming.ToList();var unmatched=new List<Entry>();
+        // Match against the latest complete account state, including future rows.
+        var matched=new HashSet<string>();
+        rows=Reconcile(old.Where(e=>e.AccountId==accountId).Concat(priorOrphans.Where(e=>e.AccountId==accountId)).DistinctBy(e=>e.Id),rows,unmatched,matched);
+        var ids=rows.Select(e=>e.Id).ToHashSet();
+        var retained=old.Where(e=>e.AccountId!=accountId||(!ids.Contains(e.Id)&&!matched.Contains(e.Id)&&(e.Date<from||e.Date>to))).ToList();
+        var retainedIds=retained.Where(e=>e.AccountId==accountId).Select(e=>e.Id).ToHashSet();
+        unmatched.RemoveAll(e=>retainedIds.Contains(e.Id));
+        retained.AddRange(rows);
+        return (retained,priorOrphans.Where(e=>e.AccountId!=accountId).Concat(unmatched).ToList());
+    }
     internal static BookingAttachment ReadAttachment(string path){
         var info=new FileInfo(path);if(info.Length>3*1024*1024)throw new InvalidDataException("Maximal 3 MB pro Anhang erlaubt.");
         string extension=Path.GetExtension(path).ToLowerInvariant();if(extension is not (".pdf" or ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp"))throw new InvalidDataException("Bitte eine PDF- oder Bilddatei auswählen.");
@@ -11,14 +24,14 @@ internal static class BookingEnrichment
     }
     internal static Entry Preserve(Entry current,Entry old)=>current with {Category=old.Category,CategoryManual=old.CategoryManual,Note=old.Note,Read=old.Read,Flagged=old.Flagged,Attachments=old.Attachments,ReminderAt=old.ReminderAt,ReminderDone=old.ReminderDone,ToDo=old.ToDo,CustomLogo=old.CustomLogo,MerchantOverride=old.MerchantOverride};
     // Match each old occurrence at most once. Ambiguous matches are left untouched rather than moving attachments to the wrong booking.
-    internal static List<Entry> Reconcile(IEnumerable<Entry> oldEntries,IEnumerable<Entry> incoming,ICollection<Entry>? unmatched=null){
+    internal static List<Entry> Reconcile(IEnumerable<Entry> oldEntries,IEnumerable<Entry> incoming,ICollection<Entry>? unmatched=null,ISet<string>? matched=null){
         var available=oldEntries.ToList();var output=new List<Entry>();
         foreach(var current in incoming){
             var candidates=available.Where(e=>e.AccountId==current.AccountId&&e.Currency==current.Currency&&e.Id==current.Id).ToArray();
             if(candidates.Length!=1&&current.EndToEndId.Length>0&&current.EndToEndId!="NOTPROVIDED")candidates=available.Where(e=>e.AccountId==current.AccountId&&e.Currency==current.Currency&&e.EndToEndId==current.EndToEndId&&e.Amount==current.Amount).ToArray();
             if(candidates.Length!=1)candidates=available.Where(e=>e.AccountId==current.AccountId&&e.Currency==current.Currency&&e.Amount==current.Amount&&(e.OriginalMerchant??e.Merchant)==(current.OriginalMerchant??current.Merchant)&&e.Purpose==current.Purpose&&(e.Date==current.Date||e.Pending&&!current.Pending&&Math.Abs(e.Date.DayNumber-current.Date.DayNumber)<=7)).ToArray();
-            if(candidates.Length==1){output.Add(Preserve(current,candidates[0]));available.Remove(candidates[0]);}else output.Add(current);
-        }if(unmatched!=null)foreach(var item in available.Where(e=>e.Note.Length>0||e.Attachments?.Count>0||e.ReminderAt!=null||e.CustomLogo!=null||e.CategoryManual||e.MerchantOverride!=null))unmatched.Add(item);return output;
+            if(candidates.Length==1){output.Add(Preserve(current,candidates[0]));matched?.Add(candidates[0].Id);available.Remove(candidates[0]);}else output.Add(current);
+        }if(unmatched!=null)foreach(var item in available.Where(HasLocalData))unmatched.Add(item);return output;
     }
 }
 

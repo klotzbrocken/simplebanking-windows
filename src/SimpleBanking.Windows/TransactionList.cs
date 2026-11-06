@@ -43,7 +43,7 @@ internal sealed class TransactionList : UserControl
         rows.MouseWheel+=(_,e)=>ScrollTo(scrollOffset-(int)(e.Delta/120d*(SystemInformation.MouseWheelScrollLines<0?rows.Height:Math.Max(1,SystemInformation.MouseWheelScrollLines)*48)));
         rows.TabStop=false;
     }
-    internal static string DateTitle(DateOnly date, DateOnly today) => date == today ? "Heute" : date == today.AddDays(-1) ? "Gestern" : date == today.AddDays(-2) ? "Vorgestern" : date.ToString("dd.MM.yyyy");
+    internal static string DateTitle(DateOnly date, DateOnly today) => date > today ? date.ToString("dd.MM.yyyy")+" · Zukünftiges Datum" : date == today ? "Heute" : date == today.AddDays(-1) ? "Gestern" : date == today.AddDays(-2) ? "Vorgestern" : date.ToString("dd.MM.yyyy");
     public void Populate(IEnumerable<Entry> entries,bool hidden,bool categories,bool pendingAsPill=true,ThemePalette? theme=null) {
         var next=entries.OrderByDescending(e=>e.Date).ToArray();
         bool same=source.Select(Key).SequenceEqual(next.Select(Key));int offset=same?ScrollOffset:0;

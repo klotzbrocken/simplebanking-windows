@@ -30,11 +30,22 @@ internal sealed class PassportHelloKeys : IHelloKeys
             throw new CryptographicException("Der Windows-Hello-Schlüssel erfüllt die Schutzanforderungen nicht.");
     }
     public byte[] Create(string name, IntPtr parent) {
-        var options=new CngKeyCreationParameters {Provider=Provider,ExportPolicy=CngExportPolicies.None,KeyUsage=CngKeyUsages.Decryption,ParentWindowHandle=parent};
-        options.Parameters.Add(Number("Length",2048));options.Parameters.Add(Number(CachePolicy,1));
-        using var key=CngKey.Create(CngAlgorithm.Rsa,name,options);
-        try {Validate(key);using var rsa=new RSACng(key);return rsa.ExportSubjectPublicKeyInfo();}
+        // The managed ExportPolicy/KeyUsage setters request NCRYPT_PERSIST_FLAG.
+        // Passport rejects that flag on built-in properties during enrollment.
+        var options=CreationParameters(parent);
+        using var key=Phase("Schlüssel erstellen",()=>CngKey.Create(CngAlgorithm.Rsa,name,options));
+        try {Phase("Schutz prüfen",()=>{Validate(key);return true;});using var rsa=new RSACng(key);return rsa.ExportSubjectPublicKeyInfo();}
         catch {key.Delete();throw;}
+    }
+    internal static T Phase<T>(string phase,Func<T> action) {
+        try{return action();}catch(CryptographicException e){e.Data["HelloPhase"]=phase;throw;}
+    }
+    internal static CngKeyCreationParameters CreationParameters(IntPtr parent) {
+        var options=new CngKeyCreationParameters {Provider=Provider,ParentWindowHandle=parent};
+        options.Parameters.Add(Number("Export Policy",0));
+        options.Parameters.Add(Number("Key Usage",(int)CngKeyUsages.Decryption));
+        options.Parameters.Add(Number("Length",2048));options.Parameters.Add(Number(CachePolicy,1));
+        return options;
     }
     public byte[] Unwrap(string name, byte[] publicHash, byte[] wrapped, IntPtr parent) {
         using var key=CngKey.Open(name,Provider);Validate(key);Context(key,parent);
@@ -79,7 +90,7 @@ internal sealed class HelloVault
             byte[] publicKey=keys.Create(name,parent);created=true;
             using var rsa=RSA.Create();rsa.ImportSubjectPublicKeyInfo(publicKey,out _);
             byte[] wrapped=rsa.Encrypt(secret,RSAEncryptionPadding.Pkcs1),hash=SHA256.HashData(publicKey);
-            byte[] verified=keys.Unwrap(name,hash,wrapped,parent);
+            byte[] verified=PassportHelloKeys.Phase("Freigabe prüfen",()=>keys.Unwrap(name,hash,wrapped,parent));
             try {if(!CryptographicOperations.FixedTimeEquals(secret,verified))throw new CryptographicException("Hello-Freigabe konnte nicht bestätigt werden.");}finally{CryptographicOperations.ZeroMemory(verified);}
             byte[] nonce=RandomNumberGenerator.GetBytes(12),tag=new byte[16],cipher=new byte[plain.Length];
             using(var aes=new AesGcm(secret,16))aes.Encrypt(nonce,plain,cipher,tag,Aad(name));
@@ -122,7 +133,7 @@ internal sealed partial class MainWindow
             if(epoch!=Volatile.Read(ref securityEpoch)||!Unlocked){Hello.Disable();return;}
             MessageBox.Show(parent,"Windows Hello ist eingerichtet. Beim nächsten Entsperren erscheint die Windows-Freigabe. Dein Masterpasswort bleibt als Alternative verfügbar.","Windows Hello");
         } catch(Exception e) when(e is CryptographicException or IOException or UnauthorizedAccessException or JsonException or InvalidDataException) {
-            if(!HelloVault.Canceled(e))MessageBox.Show(parent,"Windows Hello konnte nicht eingerichtet werden. Prüfe dein Masterpasswort und Windows → Einstellungen → Konten → Anmeldeoptionen. Der Tresor bleibt per Masterpasswort zugänglich.\n\nFehlercode: 0x"+e.HResult.ToString("X8"),"Windows Hello");
+            if(!HelloVault.Canceled(e))MessageBox.Show(parent,"Windows Hello konnte nicht eingerichtet werden. Prüfe dein Masterpasswort und Windows → Einstellungen → Konten → Anmeldeoptionen. Der Tresor bleibt per Masterpasswort zugänglich.\n\nPhase: "+(e.Data["HelloPhase"]??"Einrichtung")+"\nFehlercode: 0x"+e.HResult.ToString("X8"),"Windows Hello");
         }
     }
 }
