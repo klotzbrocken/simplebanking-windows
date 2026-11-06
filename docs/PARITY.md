@@ -1,4 +1,4 @@
-# Stand der Windows-Portierung — 0.21.0, 28.10.2026
+# Stand der Windows-Portierung — 0.22.0, 06.11.2026
 
 Zusätzliche Korrekturen vom 06.11.2026: [Buchungen, Hello, MCP und fünf weitere Mac-Commits bis ba249b40](NOVEMBER-2026.md). Persönliche Hello-/Bankabnahme bleibt offen.
 
@@ -26,7 +26,7 @@ Vorheriger Änderungsabgleich: [23 Mac-Commits bis 9be7a250](MAC-SYNC-2026-10.md
 
 ## Ausgeführte Prüfungen
 
-- 112 lokale Selbsttests, null Fehler und null Compilerwarnungen: Fachlogik, Konto/Währung, Ticket-Signatur, native ABI, Import/Export, OCR/QR, Anreicherungsabgleich, verschlüsselter Rundlauf, KI-Vertrags-Fixtures ohne Netzwerk, CLI-Schreibsperre, Zahlungs-/Spartopfdaten.
+- 123 lokale Selbsttests, null Fehler und null Compilerwarnungen: Fachlogik, Konto/Währung, Ticket-Signatur, native ABI, Import/Export, OCR/QR, Anreicherungsabgleich, verschlüsselter Rundlauf, KI-Vertrags-Fixtures ohne Netzwerk, CLI-Schreibsperre, Zahlungs-/Spartopfdaten.
 - Gerenderte UI-Prüfung mit synthetischem Tresor: Passwortabfrage genau einmal, Abbrechen/falsch/richtig, erneutes Sperren, geschlossene Unterfenster, Flyout-Doppelklick, sämtliche Einstellungsbereiche und neue Dialoge; Widget-Fokusverlust, Positionswiederherstellung, Sperren, Footer-Aktionen und Theme-Rendering. Physisches Ziehen und Multi-Monitor-/DPI-Verhalten sind noch nicht manuell abgenommen.
 - Aktueller Installations- und Prüfnachweis unter release-checks.json; historische Versionsangaben in den folgenden Abschnitten beziehen sich auf frühere Pakete.
 - Keine echte Bankanmeldung, keine reale Zahlung, keine externe KI-Anfrage. Eine authentische Bankabnahme kann nicht durch lokale Fixtures ersetzt werden.

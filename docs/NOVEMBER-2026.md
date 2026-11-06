@@ -20,7 +20,7 @@ Verglichen wurde `9be7a250...ba249b40`:
 - `f561fede`: Windows hat die Trennung zwischen bewusster Nutzeraktion und Hintergrundabruf bereits. Neue Regressionen prüfen die erneute Freigabe für Saldo und Umsatz/Historie; bestehende Tests schützen stille Hintergrundabrufe. Keine Swift-spezifische Freigabemechanik übernommen.
 - `c521bc81`: Saldoauswahl bevorzugt Booked/Available ohne eingeschlossene Kreditlinie, danach den jüngsten nicht zukünftigen Stichtag, dann Booked bei Gleichstand. Währung und Konto bleiben getrennt. Undatierte Salden bleiben nutzbar; ausschließlich zukünftige/ungeeignete Werte ergeben keinen aktuellen Saldo. Windows verwendete das Standard-Überweisungsprodukt mit Echtzeitversuch und SEPA-Fallback bereits. Ergänzt wird die explizite Option „Nur als Echtzeitüberweisung senden“, einschließlich nativer Produktwahl und Validierung gegen Terminüberweisungen.
 - `ed327a98`: Swift-Schalter und Swift-Testpfade sind nicht auf Windows übertragbar.
-- `45886f42`, `ba249b40`: Mac-Releasehinweise und Appcast werden nicht in Windows-Releasedateien kopiert. Diese Dokumentation beschreibt die Windows-Änderungen; kein Release wird veröffentlicht.
+- `45886f42`, `ba249b40`: Mac-Releasehinweise und Appcast werden nicht in Windows-Releasedateien kopiert. Diese Dokumentation beschreibt die Windows-Änderungen; die Mac-Releasedateien werden nicht verwendet.
 
 ## MCP einrichten
 
@@ -38,4 +38,4 @@ Lokal vorhandene installierte App: 0.16.0; sie wurde weder aktualisiert noch ers
 
 Die native x64-Bridge wurde mit MSVC 14.44 und dem vorhandenen Windows SDK gegen YAXI 0.2.0 gebaut. Der Release-Build hat keine Warnungen. 123 Selbsttests, Tray-Lebenszyklus und MCP-Unterprozesse (dotnet-Host sowie Windows-EXE; Demo und verweigerter Zugriff ohne Token) wurden geprüft. Der UI-Review rendert die Dialoge mit synthetischen Daten und prüft insbesondere, dass ein Termin die strikte Echtzeitoption ausschaltet. Die neue Option wurde zusätzlich anhand ihrer gerenderten Darstellung visuell geprüft.
 
-Offen bleiben persönliche Windows-Hello-PIN/Biometrie, Steffis originale Bankantwort, echte Bankfreigaben und Zahlungen, ein persönlich eingerichteter MCP-Zielclient sowie die Abnahme eines aktualisierten Installationspakets. Deshalb wird der PR als Entwurf vorbereitet. Keine Bankzahlung, kein Produktiv-Upgrade und kein Release wurden ausgeführt.
+Offen bleiben persönliche Windows-Hello-PIN/Biometrie, Steffis originale Bankantwort, echte Bankfreigaben und Zahlungen, ein persönlich eingerichteter MCP-Zielclient sowie die Abnahme eines aktualisierten Installationspakets. Die ursprüngliche Entwicklung wurde deshalb als Entwurf vorbereitet, ohne Bankzahlung, Produktiv-Upgrade oder Veröffentlichung. Für das angeforderte Windows-Release wird dieser Stand jetzt als 0.22.0 Beta 1 paketiert; die genannten persönlichen Abnahmen bleiben offen.
